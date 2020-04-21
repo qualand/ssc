@@ -1038,7 +1038,7 @@ void cm_pvsamv1::exec( ) throw (general_error)
 			throw exec_error("pvsamv1", "electric load profile must have same number of values as weather file, or 8760");
 	}
 	if (is_assigned("crit_load"))
-       {
+    {
         p_crit_load_in = as_vector_ssc_number_t("crit_load");
         nload = p_crit_load_in.size();
         if (nload != nrec && nload != 8760 )
@@ -1199,8 +1199,8 @@ void cm_pvsamv1::exec( ) throw (general_error)
 
 				irrad irr(Irradiance->weatherRecord, Irradiance->weatherHeader,
 					Irradiance->skyModel, Irradiance->radiationMode, Subarrays[nn]->trackMode,
-					Irradiance->useWeatherFileAlbedo, Irradiance->instantaneous, Subarrays[nn]->backtrackingEnabled,
-					Irradiance->dtHour, Subarrays[nn]->tiltDegrees, Subarrays[nn]->azimuthDegrees, Subarrays[nn]->trackerRotationLimitDegrees, Subarrays[nn]->groundCoverageRatio,
+					Irradiance->useWeatherFileAlbedo, Irradiance->instantaneous, Subarrays[nn]->backtrackingEnabled, false,
+					Irradiance->dtHour, Subarrays[nn]->tiltDegrees, Subarrays[nn]->azimuthDegrees, Subarrays[nn]->trackerRotationLimitDegrees, 0.0, Subarrays[nn]->groundCoverageRatio,
 					Subarrays[nn]->monthlyTiltDegrees, Irradiance->userSpecifiedMonthlyAlbedo,
 					Subarrays[nn]->poa.poaAll.get());
 											
@@ -1319,14 +1319,14 @@ void cm_pvsamv1::exec( ) throw (general_error)
 					}
 				}
 
-					// record sub-array plane of array output before computing shading and soiling
-					if (iyear == 0 || save_full_lifetime_variables == 1)
-					{
-						if (radmode != irrad::POA_R)
-							PVSystem->p_poaNominalFront[nn][idx] = (ssc_number_t)((ibeam + iskydiff + ignddiff));
-						else
-							PVSystem->p_poaNominalFront[nn][idx] = (ssc_number_t)((ipoa[nn]));
-					}
+				// record sub-array plane of array output before computing shading and soiling
+				if (iyear == 0 || save_full_lifetime_variables == 1)
+				{
+					if (radmode != irrad::POA_R)
+						PVSystem->p_poaNominalFront[nn][idx] = (ssc_number_t)((ibeam + iskydiff + ignddiff));
+					else
+						PVSystem->p_poaNominalFront[nn][idx] = (ssc_number_t)((ipoa[nn]));
+				}
 
 
 				// record sub-array contribution to total POA power for this time step  (W)
@@ -1344,73 +1344,73 @@ void cm_pvsamv1::exec( ) throw (general_error)
 					double shadedb_gpoa = ibeam + iskydiff + ignddiff;
 					double shadedb_dpoa = iskydiff + ignddiff;
 
-						// update cell temperature - unshaded value per Sara 1/25/16
-						double tcell = wf.tdry;
-						if (sunup > 0)
-						{
-							// calculate cell temperature using selected temperature model
-							pvinput_t in(ibeam, iskydiff, ignddiff, 0, ipoa[nn],
-								wf.tdry, wf.tdew, wf.wspd, wf.wdir, wf.pres,
-								solzen, aoi, hdr.elev,
-								stilt, sazi,
-								((double)wf.hour) + wf.minute / 60.0,
-								radmode, Subarrays[nn]->poa.usePOAFromWF);
-							// voltage set to -1 for max power
-							(*Subarrays[nn]->Module->cellTempModel)(in, *Subarrays[nn]->Module->moduleModel, -1.0, tcell);
-						}
-						double shadedb_str_vmp_stc = Subarrays[nn]->nModulesPerString * Subarrays[nn]->Module->voltageMaxPower;
-						double shadedb_mppt_lo = PVSystem->Inverter->mpptLowVoltage;
-						double shadedb_mppt_hi = PVSystem->Inverter->mpptHiVoltage;
-
-						// shading database if necessary
-						if (!Subarrays[nn]->shadeCalculator.fbeam_shade_db(shadeDatabase, hour, solalt, solazi, jj, step_per_hour, shadedb_gpoa, shadedb_dpoa, tcell, Subarrays[nn]->nModulesPerString, shadedb_str_vmp_stc, shadedb_mppt_lo, shadedb_mppt_hi))
-						{
-							throw exec_error("pvsamv1", util::format("Error calculating shading factor for subarray %d", nn));
-						}
-						if (iyear == 0 || save_full_lifetime_variables == 1)
-						{
-#ifdef SHADE_DB_OUTPUTS
-						p_shadedb_gpoa[nn][idx] = (ssc_number_t)shadedb_gpoa;
-						p_shadedb_dpoa[nn][idx] = (ssc_number_t)shadedb_dpoa;
-						p_shadedb_pv_cell_temp[nn][idx] = (ssc_number_t)tcell;
-						p_shadedb_mods_per_str[nn][idx] = (ssc_number_t)Subarrays[nn]->nModulesPerString;
-						p_shadedb_str_vmp_stc[nn][idx] = (ssc_number_t)shadedb_str_vmp_stc;
-						p_shadedb_mppt_lo[nn][idx] = (ssc_number_t)shadedb_mppt_lo;
-						p_shadedb_mppt_hi[nn][idx] = (ssc_number_t)shadedb_mppt_hi;
-						log("shade db hour " + util::to_string((int)hour) +"\n" + shadeCalculator->get_warning());
-#endif
-							// fraction shaded for comparison
-							PVSystem->p_shadeDBShadeFraction[nn][idx] = (ssc_number_t)(Subarrays[nn]->shadeCalculator.dc_shade_factor());
-						}
-					}
-					else
+					// update cell temperature - unshaded value per Sara 1/25/16
+					double tcell = wf.tdry;
+					if (sunup > 0)
 					{
-						if (!Subarrays[nn]->shadeCalculator.fbeam(hour, solalt, solazi, jj, step_per_hour))
-						{
-							throw exec_error("pvsamv1", util::format("Error calculating shading factor for subarray %d", nn));
-						}
+						// calculate cell temperature using selected temperature model
+						pvinput_t in(ibeam, iskydiff, ignddiff, 0, ipoa[nn],
+							wf.tdry, wf.tdew, wf.wspd, wf.wdir, wf.pres,
+							solzen, aoi, hdr.elev,
+							stilt, sazi,
+							((double)wf.hour) + wf.minute / 60.0,
+							radmode, Subarrays[nn]->poa.usePOAFromWF);
+						// voltage set to -1 for max power
+						(*Subarrays[nn]->Module->cellTempModel)(in, *Subarrays[nn]->Module->moduleModel, -1.0, tcell);
 					}
+					double shadedb_str_vmp_stc = Subarrays[nn]->nModulesPerString * Subarrays[nn]->Module->voltageMaxPower;
+					double shadedb_mppt_lo = PVSystem->Inverter->mpptLowVoltage;
+					double shadedb_mppt_hi = PVSystem->Inverter->mpptHiVoltage;
 
-					// apply hourly shading factors to beam (if none enabled, factors are 1.0)
-					// shj 3/21/16 - update to handle negative shading loss
-					if (Subarrays[nn]->shadeCalculator.beam_shade_factor() != 1.0){
-						//							if (sa[nn].shad.beam_shade_factor() < 1.0){
-						// Sara 1/25/16 - shading database derate applied to dc only
-						// shading loss applied to beam if not from shading database
-						ibeam *= Subarrays[nn]->shadeCalculator.beam_shade_factor();
-						if (radmode == irrad::POA_R || radmode == irrad::POA_P){
-							Subarrays[nn]->poa.usePOAFromWF = false;
-							if (Subarrays[nn]->poa.poaShadWarningCount == 0){
-								log(util::format("Combining POA irradiance as input with the beam shading losses at time [y:%d m:%d d:%d h:%d] forces SAM to use a POA decomposition model to calculate incident beam irradiance",
-									wf.year, wf.month, wf.day, wf.hour), SSC_WARNING, (float)idx);
-							}
-							else{
-								log(util::format("Combining POA irradiance as input with the beam shading losses at time [y:%d m:%d d:%d h:%d] forces SAM to use a POA decomposition model to calculate incident beam irradiance",
-									wf.year, wf.month, wf.day, wf.hour), SSC_NOTICE, (float)idx);
-							}
-							Subarrays[nn]->poa.poaShadWarningCount++;
-						}
+					// shading database if necessary
+					if (!Subarrays[nn]->shadeCalculator.fbeam_shade_db(shadeDatabase, hour, solalt, solazi, jj, step_per_hour, shadedb_gpoa, shadedb_dpoa, tcell, Subarrays[nn]->nModulesPerString, shadedb_str_vmp_stc, shadedb_mppt_lo, shadedb_mppt_hi))
+					{
+						throw exec_error("pvsamv1", util::format("Error calculating shading factor for subarray %d", nn));
 					}
+					if (iyear == 0 || save_full_lifetime_variables == 1)
+					{
+#ifdef SHADE_DB_OUTPUTS
+					p_shadedb_gpoa[nn][idx] = (ssc_number_t)shadedb_gpoa;
+					p_shadedb_dpoa[nn][idx] = (ssc_number_t)shadedb_dpoa;
+					p_shadedb_pv_cell_temp[nn][idx] = (ssc_number_t)tcell;
+					p_shadedb_mods_per_str[nn][idx] = (ssc_number_t)Subarrays[nn]->nModulesPerString;
+					p_shadedb_str_vmp_stc[nn][idx] = (ssc_number_t)shadedb_str_vmp_stc;
+					p_shadedb_mppt_lo[nn][idx] = (ssc_number_t)shadedb_mppt_lo;
+					p_shadedb_mppt_hi[nn][idx] = (ssc_number_t)shadedb_mppt_hi;
+					log("shade db hour " + util::to_string((int)hour) +"\n" + shadeCalculator->get_warning());
+#endif
+						// fraction shaded for comparison
+						PVSystem->p_shadeDBShadeFraction[nn][idx] = (ssc_number_t)(Subarrays[nn]->shadeCalculator.dc_shade_factor());
+					}
+				}
+				else
+				{
+					if (!Subarrays[nn]->shadeCalculator.fbeam(solalt, solazi, wf.month, wf.day, wf.hour, wf.minute))
+					{
+						throw exec_error("pvsamv1", util::format("Error calculating shading factor for subarray %d", nn));
+					}
+				}
+
+				// apply hourly shading factors to beam (if none enabled, factors are 1.0)
+				// shj 3/21/16 - update to handle negative shading loss
+				if (Subarrays[nn]->shadeCalculator.beam_shade_factor() != 1.0){
+					//							if (sa[nn].shad.beam_shade_factor() < 1.0){
+					// Sara 1/25/16 - shading database derate applied to dc only
+					// shading loss applied to beam if not from shading database
+					ibeam *= Subarrays[nn]->shadeCalculator.beam_shade_factor();
+					if (radmode == irrad::POA_R || radmode == irrad::POA_P){
+						Subarrays[nn]->poa.usePOAFromWF = false;
+						if (Subarrays[nn]->poa.poaShadWarningCount == 0){
+							log(util::format("Combining POA irradiance as input with the beam shading losses at time [y:%d m:%d d:%d h:%d] forces SAM to use a POA decomposition model to calculate incident beam irradiance",
+								wf.year, wf.month, wf.day, wf.hour), SSC_WARNING, (float)idx);
+						}
+						else{
+							log(util::format("Combining POA irradiance as input with the beam shading losses at time [y:%d m:%d d:%d h:%d] forces SAM to use a POA decomposition model to calculate incident beam irradiance",
+								wf.year, wf.month, wf.day, wf.hour), SSC_NOTICE, (float)idx);
+						}
+						Subarrays[nn]->poa.poaShadWarningCount++;
+					}
+				}
 
 				// apply sky diffuse shading factor (specified as constant, nominally 1.0 if disabled in UI)
 				if (Subarrays[nn]->shadeCalculator.fdiff() < 1.0){
@@ -1424,106 +1424,106 @@ void cm_pvsamv1::exec( ) throw (general_error)
 
 				double beam_shading_factor = Subarrays[nn]->shadeCalculator.beam_shade_factor();
 
-					//self-shading calculations
-					if (((Subarrays[nn]->trackMode == 0 || Subarrays[nn]->trackMode == 4) && (Subarrays[nn]->shadeMode == 1 || Subarrays[nn]->shadeMode == 2)) //fixed tilt or timeseries tilt, self-shading (linear or non-linear) OR
-						|| (Subarrays[nn]->trackMode == 1 && (Subarrays[nn]->shadeMode == 1 || Subarrays[nn]->shadeMode == 2))) //one-axis tracking (both backtracking and true tracking), self-shading (linear or non-linear)
+				//self-shading calculations
+				if (((Subarrays[nn]->trackMode == 0 || Subarrays[nn]->trackMode == 4) && (Subarrays[nn]->shadeMode == 1 || Subarrays[nn]->shadeMode == 2)) //fixed tilt or timeseries tilt, self-shading (linear or non-linear) OR
+					|| (Subarrays[nn]->trackMode == 1 && (Subarrays[nn]->shadeMode == 1 || Subarrays[nn]->shadeMode == 2))) //one-axis tracking (both backtracking and true tracking), self-shading (linear or non-linear)
+				{
+
+				if (radmode == irrad::POA_R || radmode == irrad::POA_P){
+					if (idx == 0)
+						log("Combining POA irradiance as input with self shading forces SAM to employ a POA decomposition model to calculate incident beam irradiance", SSC_WARNING);
+					Subarrays[nn]->poa.usePOAFromWF = false;
+				}
+
+				// info to be passed to self-shading function
+				bool trackbool = (Subarrays[nn]->trackMode == 1);	// 0 for fixed tilt and timeseries tilt, 1 for one-axis
+				bool linear = (Subarrays[nn]->shadeMode == 2); //0 for full self-shading, 1 for linear self-shading
+
+				//geometric fraction of the array that is shaded for one-axis trackers.
+				//USES A DIFFERENT FUNCTION THAN THE SELF-SHADING BECAUSE SS IS MEANT FOR FIXED ONLY. shadeFraction1x IS FOR TRUE-TRACKING ONE-AXIS TRACKERS ONLY.
+				//used in the non-linear self-shading calculator for one-axis tracking only
+				double shad1xf = 0.0;
+				if (trackbool && (Subarrays[nn]->backtrackingEnabled == false))
+					shad1xf = shadeFraction1x(solazi, solzen, Subarrays[nn]->tiltDegrees, Subarrays[nn]->azimuthDegrees, Subarrays[nn]->groundCoverageRatio, rot);
+
+				//execute self-shading calculations
+				ssc_number_t beam_to_use; //some self-shading calculations require DNI, NOT ibeam (beam in POA). Need to know whether to use DNI from wf or calculated, depending on radmode
+				ssc_number_t dhi_to_use; //some self-shading calculations require DHI, NOT iskydiff (sky diff in POA). Need to know whether to use DHI from wf or calculated, depending on radmode
+				if (radmode == irrad::DN_DF || radmode == irrad::DN_GH) beam_to_use = (ssc_number_t)wf.dn;
+				else beam_to_use = Irradiance->p_IrradianceCalculated[2][hour * step_per_hour]; // top of hour in first year
+				if (radmode == irrad::DN_DF || radmode == irrad::GH_DF) dhi_to_use = (ssc_number_t)wf.df;
+				else dhi_to_use = Irradiance->p_IrradianceCalculated[1][hour * step_per_hour]; // top of hour in first year
+
+				if (ss_exec(Subarrays[nn]->selfShadingInputs, stilt, sazi, solzen, solazi, beam_to_use, dhi_to_use, ibeam, iskydiff, ignddiff, alb, trackbool, linear, shad1xf, Subarrays[nn]->selfShadingOutputs))
+				{
+
+					if (linear && trackbool) //one-axis linear
 					{
+                        ibeam *= (1 - shad1xf); //derate beam irradiance linearly by the geometric shading fraction calculated above per Chris Deline 2/10/16
+                        beam_shading_factor *= (1 - shad1xf);
+                        // Sky diffuse and ground-reflected diffuse are derated according to C. Deline's algorithm
+                        iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+                        ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
 
-					if (radmode == irrad::POA_R || radmode == irrad::POA_P){
-						if (idx == 0)
-							log("Combining POA irradiance as input with self shading forces SAM to employ a POA decomposition model to calculate incident beam irradiance", SSC_WARNING);
-						Subarrays[nn]->poa.usePOAFromWF = false;
-					}
+                        if (iyear == 0 || save_full_lifetime_variables == 1)
+                        {
+                            PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)1;
+                            PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)(1 - shad1xf);
+                            PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+                            PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
+                        }
+                    }
 
-					// info to be passed to self-shading function
-					bool trackbool = (Subarrays[nn]->trackMode == 1);	// 0 for fixed tilt and timeseries tilt, 1 for one-axis
-					bool linear = (Subarrays[nn]->shadeMode == 2); //0 for full self-shading, 1 for linear self-shading
+					else if (linear) //fixed tilt linear
+					{
+						ibeam *= (1 - Subarrays[nn]->selfShadingOutputs.m_shade_frac_fixed);
+						beam_shading_factor *= (1 - Subarrays[nn]->selfShadingOutputs.m_shade_frac_fixed);
+						iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+                        ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
 
-						//geometric fraction of the array that is shaded for one-axis trackers.
-						//USES A DIFFERENT FUNCTION THAN THE SELF-SHADING BECAUSE SS IS MEANT FOR FIXED ONLY. shadeFraction1x IS FOR TRUE-TRACKING ONE-AXIS TRACKERS ONLY.
-						//used in the non-linear self-shading calculator for one-axis tracking only
-						double shad1xf = 0.0;
-						if (trackbool && (Subarrays[nn]->backtrackingEnabled == false))
-						    shad1xf = shadeFraction1x(solazi, solzen, Subarrays[nn]->tiltDegrees, Subarrays[nn]->azimuthDegrees, Subarrays[nn]->groundCoverageRatio, rot);
-
-						//execute self-shading calculations
-						ssc_number_t beam_to_use; //some self-shading calculations require DNI, NOT ibeam (beam in POA). Need to know whether to use DNI from wf or calculated, depending on radmode
-						ssc_number_t dhi_to_use; //some self-shading calculations require DHI, NOT iskydiff (sky diff in POA). Need to know whether to use DHI from wf or calculated, depending on radmode
-						if (radmode == irrad::DN_DF || radmode == irrad::DN_GH) beam_to_use = (ssc_number_t)wf.dn;
-						else beam_to_use = Irradiance->p_IrradianceCalculated[2][hour * step_per_hour]; // top of hour in first year
-						if (radmode == irrad::DN_DF || radmode == irrad::GH_DF) dhi_to_use = (ssc_number_t)wf.df;
-						else dhi_to_use = Irradiance->p_IrradianceCalculated[1][hour * step_per_hour]; // top of hour in first year
-
-						if (ss_exec(Subarrays[nn]->selfShadingInputs, stilt, sazi, solzen, solazi, beam_to_use, dhi_to_use, ibeam, iskydiff, ignddiff, alb, trackbool, linear, shad1xf, Subarrays[nn]->selfShadingOutputs))
+						if (iyear == 0 || save_full_lifetime_variables == 1)
 						{
-
-						    if (linear && trackbool) //one-axis linear
-						    {
-                                ibeam *= (1 - shad1xf); //derate beam irradiance linearly by the geometric shading fraction calculated above per Chris Deline 2/10/16
-                                beam_shading_factor *= (1 - shad1xf);
-                                // Sky diffuse and ground-reflected diffuse are derated according to C. Deline's algorithm
-                                iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-                                ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-
-                                if (iyear == 0 || save_full_lifetime_variables == 1)
-                                {
-                                    PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)1;
-                                    PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)(1 - shad1xf);
-                                    PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-                                    PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-                                }
-                            }
-
-						    else if (linear) //fixed tilt linear
-							{
-								ibeam *= (1 - Subarrays[nn]->selfShadingOutputs.m_shade_frac_fixed);
-								beam_shading_factor *= (1 - Subarrays[nn]->selfShadingOutputs.m_shade_frac_fixed);
-								iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-                                ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-
-								if (iyear == 0 || save_full_lifetime_variables == 1)
-								{
-									PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)1;
-									PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)(1 - Subarrays[nn]->selfShadingOutputs.m_shade_frac_fixed);
-									PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-								    PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-								}
-							}
-
-							else if (trackbool && (Subarrays[nn]->backtrackingEnabled == true)) //non-linear backtracking one-axis
-							{
-							    iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-								ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-
-								if (iyear == 0 || save_full_lifetime_variables == 1)
-								{
-									PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)1;
-                                    PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)1;
-									PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-									PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-								}
-							}
-
-							else //non-linear: fixed tilt AND one-axis true-tracking
-							{
-                                // Beam is not derated- all beam derate effects (linear and non-linear) are taken into account in the nonlinear_dc_shading_derate
-								Subarrays[nn]->poa.nonlinearDCShadingDerate = Subarrays[nn]->selfShadingOutputs.m_dc_derate;
-
-								iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-								ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-
-								if (iyear == 0 || save_full_lifetime_variables == 1)
-								{
-									PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
-									PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
-									PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_dc_derate;
-									PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)1;
-								}
-							}
+							PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)1;
+							PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)(1 - Subarrays[nn]->selfShadingOutputs.m_shade_frac_fixed);
+							PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+							PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
 						}
-						else
-							throw exec_error("pvsamv1", util::format("Self-shading calculation failed at %d", (int)idx));
 					}
+
+					else if (trackbool && (Subarrays[nn]->backtrackingEnabled == true)) //non-linear backtracking one-axis
+					{
+						iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+						ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
+
+						if (iyear == 0 || save_full_lifetime_variables == 1)
+						{
+							PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)1;
+                            PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)1;
+							PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+							PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
+						}
+					}
+
+					else //non-linear: fixed tilt AND one-axis true-tracking
+					{
+                        // Beam is not derated- all beam derate effects (linear and non-linear) are taken into account in the nonlinear_dc_shading_derate
+						Subarrays[nn]->poa.nonlinearDCShadingDerate = Subarrays[nn]->selfShadingOutputs.m_dc_derate;
+
+						iskydiff *= Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+						ignddiff *= Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
+
+						if (iyear == 0 || save_full_lifetime_variables == 1)
+						{
+							PVSystem->p_derateSelfShadingDiffuse[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_diffuse_derate;
+							PVSystem->p_derateSelfShadingReflected[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_reflected_derate;
+							PVSystem->p_derateSelfShading[nn][idx] = (ssc_number_t)Subarrays[nn]->selfShadingOutputs.m_dc_derate;
+							PVSystem->p_derateLinear[nn][idx] = (ssc_number_t)1;
+						}
+					}
+				}
+				else
+					throw exec_error("pvsamv1", util::format("Self-shading calculation failed at %d", (int)idx));
+			}
 
 				double poashad = (radmode == irrad::POA_R) ? ipoa[nn] : (ibeam + iskydiff + ignddiff);
 
@@ -1616,58 +1616,58 @@ void cm_pvsamv1::exec( ) throw (general_error)
 				//initialize it as -1 and check for that later
 				double stringVoltage = -1;
 
-					//mismatch calculations assume that the inverter MPPT operates all strings on that MPPT input at the same voltage.
-					//this algorithm sweeps across a range of string voltages, calculating total power for all strings on this MPPT input at each voltage.
-					//it finds the maximum total power of all string voltages swept, then uses that in subsequent power calculations for each subarray.
-					if (PVSystem->enableMismatchVoltageCalc)
+				//mismatch calculations assume that the inverter MPPT operates all strings on that MPPT input at the same voltage.
+				//this algorithm sweeps across a range of string voltages, calculating total power for all strings on this MPPT input at each voltage.
+				//it finds the maximum total power of all string voltages swept, then uses that in subsequent power calculations for each subarray.
+				if (PVSystem->enableMismatchVoltageCalc)
+				{
+					double vmax = PVSystem->Inverter->mpptHiVoltage; //the upper MPPT range of the inverter is the high end for string voltages that it will control
+					double vmin = PVSystem->Inverter->mpptLowVoltage; //the lower MPPT range of the inverter is the low end for string voltages that it will control
+					const int NP = 100; //number of points in between max and min voltage to sweep
+					double Pmax = 0; //variable to store the maximum power for comparison between different points along the voltage sweep
+					// sweep voltage, calculating current for each subarray, add all subarray currents together at each voltage
+					for (int i = 0; i < NP; i++)
 					{
-						double vmax = PVSystem->Inverter->mpptHiVoltage; //the upper MPPT range of the inverter is the high end for string voltages that it will control
-						double vmin = PVSystem->Inverter->mpptLowVoltage; //the lower MPPT range of the inverter is the low end for string voltages that it will control
-						const int NP = 100; //number of points in between max and min voltage to sweep
-						double Pmax = 0; //variable to store the maximum power for comparison between different points along the voltage sweep
-						// sweep voltage, calculating current for each subarray, add all subarray currents together at each voltage
-						for (int i = 0; i < NP; i++)
+						double stringV = vmin + (vmax - vmin)*i / ((double)NP); //voltage of a string at this point in the voltage sweep
+
+					//if the voltage is ok, continue to calculate total power on this MPPT input at this voltage
+					double P = 0; //temporary variable to store the total power on this MPPT input at this voltage
+					for (int nSubarray = 0; nSubarray < nSubarraysOnMpptInput; nSubarray++) //sweep across all subarrays connected to this MPPT input
+					{
+						int nn = SubarraysOnMpptInput[nSubarray]; //get the index of the subarray we're checking here
+						double V = stringV / (double)Subarrays[nn]->nModulesPerString; //voltage of an individual module on a string on this subarray
+
+							//initalize pvinput and pvoutput structures for the model
+							pvinput_t in(Subarrays[nn]->poa.poaBeamFront, Subarrays[nn]->poa.poaDiffuseFront, Subarrays[nn]->poa.poaGroundFront, Subarrays[nn]->poa.poaRear * bifaciality, Subarrays[nn]->poa.poaTotal,
+								wf.tdry, wf.tdew, wf.wspd, wf.wdir, wf.pres,
+								solzen, Subarrays[nn]->poa.angleOfIncidenceDegrees, hdr.elev,
+								Subarrays[nn]->poa.surfaceTiltDegrees, Subarrays[nn]->poa.surfaceAzimuthDegrees,
+								((double)wf.hour) + wf.minute / 60.0,
+								radmode, Subarrays[nn]->poa.usePOAFromWF);
+							pvoutput_t out(0, 0, 0, 0, 0, 0, 0, 0);
+
+						//calculate the output power for one module in this subarray at this voltage
+						if (Subarrays[nn]->poa.sunUp)
 						{
-							double stringV = vmin + (vmax - vmin)*i / ((double)NP); //voltage of a string at this point in the voltage sweep
-
-						//if the voltage is ok, continue to calculate total power on this MPPT input at this voltage
-						double P = 0; //temporary variable to store the total power on this MPPT input at this voltage
-						for (int nSubarray = 0; nSubarray < nSubarraysOnMpptInput; nSubarray++) //sweep across all subarrays connected to this MPPT input
-						{
-							int nn = SubarraysOnMpptInput[nSubarray]; //get the index of the subarray we're checking here
-							double V = stringV / (double)Subarrays[nn]->nModulesPerString; //voltage of an individual module on a string on this subarray
-
-								//initalize pvinput and pvoutput structures for the model
-								pvinput_t in(Subarrays[nn]->poa.poaBeamFront, Subarrays[nn]->poa.poaDiffuseFront, Subarrays[nn]->poa.poaGroundFront, Subarrays[nn]->poa.poaRear * bifaciality, Subarrays[nn]->poa.poaTotal,
-									wf.tdry, wf.tdew, wf.wspd, wf.wdir, wf.pres,
-									solzen, Subarrays[nn]->poa.angleOfIncidenceDegrees, hdr.elev,
-									Subarrays[nn]->poa.surfaceTiltDegrees, Subarrays[nn]->poa.surfaceAzimuthDegrees,
-									((double)wf.hour) + wf.minute / 60.0,
-									radmode, Subarrays[nn]->poa.usePOAFromWF);
-								pvoutput_t out(0, 0, 0, 0, 0, 0, 0, 0);
-
-							//calculate the output power for one module in this subarray at this voltage
-							if (Subarrays[nn]->poa.sunUp)
-							{
-								double tcell = wf.tdry;
-								// calculate cell temperature using selected temperature model
-								(*Subarrays[nn]->Module->cellTempModel)(in, *Subarrays[nn]->Module->moduleModel, V, tcell);
-								// calculate module power output using conversion model previously specified
-								(*Subarrays[nn]->Module->moduleModel)(in, tcell, V, out);
-							}
-							//add the power from this subarray to the total power
-							P += V * out.Current * (double)Subarrays[nn]->nModulesPerString * (double)Subarrays[nn]->nStrings;
+							double tcell = wf.tdry;
+							// calculate cell temperature using selected temperature model
+							(*Subarrays[nn]->Module->cellTempModel)(in, *Subarrays[nn]->Module->moduleModel, V, tcell);
+							// calculate module power output using conversion model previously specified
+							(*Subarrays[nn]->Module->moduleModel)(in, tcell, V, out);
 						}
-
-						//check if the total power at this voltage is higher than the power values we've calculated before, if so, set it as the new max
-						if (P > Pmax)
-						{
-							Pmax = P;
-							stringVoltage = stringV;
-						}
+						//add the power from this subarray to the total power
+						P += V * out.Current * (double)Subarrays[nn]->nModulesPerString * (double)Subarrays[nn]->nStrings;
 					}
 
-				} //now we have the string voltage at which the MPPT input will produce max power, to be used in subsequent calcs
+					//check if the total power at this voltage is higher than the power values we've calculated before, if so, set it as the new max
+					if (P > Pmax)
+					{
+						Pmax = P;
+						stringVoltage = stringV;
+					}
+				}
+
+			} //now we have the string voltage at which the MPPT input will produce max power, to be used in subsequent calcs
 
 					//now calculate power for each subarray on this mppt input. stringVoltage will still be -1 if mismatch calcs aren't enabled, or the value decided by mismatch calcs if they are enabled
 					std::vector<pvinput_t> in{ num_subarrays }; //create arrays for the pv input and output structures because we have to deal with them in multiple loops to check for MPPT clipping
@@ -1978,22 +1978,22 @@ void cm_pvsamv1::exec( ) throw (general_error)
 					Irradiance->p_sunUpOverHorizon[idx] = (ssc_number_t)sunup;
 				}
 
-				if (iyear == 0 || save_full_lifetime_variables == 1)
-				{
-					// Sum of radiation power on each subarray for the current timestep [kW]
-					PVSystem->p_poaFrontNominalTotal[idx] = (ssc_number_t)(ts_accum_poa_front_nom * util::watt_to_kilowatt);
-					PVSystem->p_poaFrontBeamNominalTotal[idx] = (ssc_number_t)(ts_accum_poa_front_beam_nom * util::watt_to_kilowatt);
-					PVSystem->p_poaFrontShadedTotal[idx] = (ssc_number_t)(ts_accum_poa_front_shaded * util::watt_to_kilowatt);
-					PVSystem->p_poaFrontShadedSoiledTotal[idx] = (ssc_number_t)(ts_accum_poa_front_shaded_soiled * util::watt_to_kilowatt);
-					PVSystem->p_poaFrontTotal[idx] = (ssc_number_t)(ts_accum_poa_front_total * util::watt_to_kilowatt);
-					PVSystem->p_poaRearTotal[idx] = (ssc_number_t)(ts_accum_poa_rear_after_losses * util::watt_to_kilowatt);
-					PVSystem->p_poaTotalAllSubarrays[idx] = (ssc_number_t)(ts_accum_poa_total_eff * util::watt_to_kilowatt);
-					PVSystem->p_poaFrontBeamTotal[idx] = (ssc_number_t)(ts_accum_poa_front_beam_eff * util::watt_to_kilowatt);
-					PVSystem->p_inverterMPPTLoss[idx] = 0;
-					for (size_t nn = 0; nn < num_subarrays; nn++) {
-						PVSystem->p_inverterMPPTLoss[idx] += (ssc_number_t)(mpptVoltageClipping[nn] * util::watt_to_kilowatt);
-					}
+			if (iyear == 0 || save_full_lifetime_variables == 1)
+			{
+				// Sum of radiation power on each subarray for the current timestep [kW]
+				PVSystem->p_poaFrontNominalTotal[idx] = (ssc_number_t)(ts_accum_poa_front_nom * util::watt_to_kilowatt);
+				PVSystem->p_poaFrontBeamNominalTotal[idx] = (ssc_number_t)(ts_accum_poa_front_beam_nom * util::watt_to_kilowatt);
+				PVSystem->p_poaFrontShadedTotal[idx] = (ssc_number_t)(ts_accum_poa_front_shaded * util::watt_to_kilowatt);
+				PVSystem->p_poaFrontShadedSoiledTotal[idx] = (ssc_number_t)(ts_accum_poa_front_shaded_soiled * util::watt_to_kilowatt);
+				PVSystem->p_poaFrontTotal[idx] = (ssc_number_t)(ts_accum_poa_front_total * util::watt_to_kilowatt);
+				PVSystem->p_poaRearTotal[idx] = (ssc_number_t)(ts_accum_poa_rear_after_losses * util::watt_to_kilowatt);
+				PVSystem->p_poaTotalAllSubarrays[idx] = (ssc_number_t)(ts_accum_poa_total_eff * util::watt_to_kilowatt);
+				PVSystem->p_poaFrontBeamTotal[idx] = (ssc_number_t)(ts_accum_poa_front_beam_eff * util::watt_to_kilowatt);
+				PVSystem->p_inverterMPPTLoss[idx] = 0;
+				for (size_t nn = 0; nn < num_subarrays; nn++) {
+					PVSystem->p_inverterMPPTLoss[idx] += (ssc_number_t)(mpptVoltageClipping[nn] * util::watt_to_kilowatt);
 				}
+			}
 
 			// Predict clipping for DC battery controller
 			if (en_batt)
@@ -2347,9 +2347,9 @@ void cm_pvsamv1::exec( ) throw (general_error)
 		// bug fix 6/15/15 jmf: total input radiation for PR should NOT including shading or soiling, hence use Nominal value.
 		assign("performance_ratio", var_data((ssc_number_t)(ac_net / (nom_rad * mod_eff / 100.0))));
 
-	// accumulate annual and monthly battery model outputs
-	if ( en_batt ) batt->calculate_monthly_and_annual_outputs( *this );
-	else assign( "average_battery_roundtrip_efficiency", var_data( 0.0f ) ); // if battery disabled, since it's shown in the metrics table
+		// accumulate annual and monthly battery model outputs
+		if (en_batt) batt->calculate_monthly_and_annual_outputs(*this);
+		else assign("average_battery_roundtrip_efficiency", var_data(0.0f)); // if battery disabled, since it's shown in the metrics table
 
 		// calculate nominal dc input
 		double annual_dc_nominal = (inp_rad * mod_eff / 100.0);
@@ -2358,46 +2358,46 @@ void cm_pvsamv1::exec( ) throw (general_error)
 		assign("annual_energy", var_data((ssc_number_t)annual_energy));
 
 
-	double annual_mismatch_loss = 0, annual_diode_loss = 0, annual_wiring_loss = 0, annual_tracking_loss = 0, annual_nameplate_loss = 0, annual_dcopt_loss = 0;
-	double annual_dc_gross = 0;
+		double annual_mismatch_loss = 0, annual_diode_loss = 0, annual_wiring_loss = 0, annual_tracking_loss = 0, annual_nameplate_loss = 0, annual_dcopt_loss = 0;
+		double annual_dc_gross = 0;
 
-	// loop over subarrays
-	for (size_t nn = 0; nn < num_subarrays; nn++)
-	{
-		if ( Subarrays[nn]->enable )
+		// loop over subarrays
+		for (size_t nn = 0; nn < num_subarrays; nn++)
 		{
-			std::string prefix = "subarray" + util::to_string(static_cast<int>(nn+1)) + "_";
-
-			double mismatch_loss = 0,diode_loss = 0,wiring_loss = 0,tracking_loss = 0, nameplate_loss = 0, dcopt_loss = 0;
-			// dc derate for each sub array
-			double dc_loss = dc_gross[nn] * Subarrays[nn]->dcLossTotalPercent;
-			annual_dc_gross += dc_gross[nn];
-
-			if (Subarrays[nn]->dcLossTotalPercent != 0)
+			if (Subarrays[nn]->enable)
 			{
-				double total_percent = Subarrays[nn]->dcLossTotalPercent;
-				mismatch_loss = Subarrays[nn]->mismatchLossPercent / total_percent * dc_loss;
-				diode_loss = Subarrays[nn]->diodesLossPercent / total_percent * dc_loss;
-				wiring_loss = Subarrays[nn]->dcWiringLossPercent / total_percent * dc_loss;
-				tracking_loss = Subarrays[nn]->trackingLossPercent / total_percent * dc_loss;
-				nameplate_loss = Subarrays[nn]->nameplateLossPercent / total_percent * dc_loss;
-				dcopt_loss = Subarrays[nn]->dcOptimizerLossPercent / total_percent * dc_loss;
-			}
-			annual_mismatch_loss += mismatch_loss;
-			annual_diode_loss += diode_loss;
-			annual_wiring_loss += wiring_loss;
-			annual_tracking_loss += tracking_loss;
-			annual_nameplate_loss += nameplate_loss;
-			annual_dcopt_loss += dcopt_loss;
+				std::string prefix = "subarray" + util::to_string(static_cast<int>(nn + 1)) + "_";
 
-			assign("annual_" + prefix + "dc_gross", var_data((ssc_number_t)dc_gross[nn]));
-			assign("annual_" + prefix + "dc_mismatch_loss", var_data((ssc_number_t)mismatch_loss));
-			assign("annual_" + prefix + "dc_diodes_loss", var_data((ssc_number_t)diode_loss));
-			assign("annual_" + prefix + "dc_wiring_loss", var_data((ssc_number_t)wiring_loss));
-			assign("annual_" + prefix + "dc_tracking_loss", var_data((ssc_number_t)tracking_loss));
-			assign("annual_" + prefix + "dc_nameplate_loss", var_data((ssc_number_t)nameplate_loss));
+				double mismatch_loss = 0, diode_loss = 0, wiring_loss = 0, tracking_loss = 0, nameplate_loss = 0, dcopt_loss = 0;
+				// dc derate for each sub array
+				double dc_loss = dc_gross[nn] * Subarrays[nn]->dcLossTotalPercent;
+				annual_dc_gross += dc_gross[nn];
+
+				if (Subarrays[nn]->dcLossTotalPercent != 0)
+				{
+					double total_percent = Subarrays[nn]->dcLossTotalPercent;
+					mismatch_loss = Subarrays[nn]->mismatchLossPercent / total_percent * dc_loss;
+					diode_loss = Subarrays[nn]->diodesLossPercent / total_percent * dc_loss;
+					wiring_loss = Subarrays[nn]->dcWiringLossPercent / total_percent * dc_loss;
+					tracking_loss = Subarrays[nn]->trackingLossPercent / total_percent * dc_loss;
+					nameplate_loss = Subarrays[nn]->nameplateLossPercent / total_percent * dc_loss;
+					dcopt_loss = Subarrays[nn]->dcOptimizerLossPercent / total_percent * dc_loss;
+				}
+				annual_mismatch_loss += mismatch_loss;
+				annual_diode_loss += diode_loss;
+				annual_wiring_loss += wiring_loss;
+				annual_tracking_loss += tracking_loss;
+				annual_nameplate_loss += nameplate_loss;
+				annual_dcopt_loss += dcopt_loss;
+
+				assign("annual_" + prefix + "dc_gross", var_data((ssc_number_t)dc_gross[nn]));
+				assign("annual_" + prefix + "dc_mismatch_loss", var_data((ssc_number_t)mismatch_loss));
+				assign("annual_" + prefix + "dc_diodes_loss", var_data((ssc_number_t)diode_loss));
+				assign("annual_" + prefix + "dc_wiring_loss", var_data((ssc_number_t)wiring_loss));
+				assign("annual_" + prefix + "dc_tracking_loss", var_data((ssc_number_t)tracking_loss));
+				assign("annual_" + prefix + "dc_nameplate_loss", var_data((ssc_number_t)nameplate_loss));
+			}
 		}
-	}
 
 		assign("annual_dc_gross", var_data((ssc_number_t)annual_dc_gross));
 		assign("annual_ac_gross", var_data((ssc_number_t)annual_ac_gross));
@@ -2487,11 +2487,11 @@ void cm_pvsamv1::exec( ) throw (general_error)
 		if (annual_poa_rear > 0) percent = 100 * (annual_poa_rear) / annual_poa_front;
 		assign("annual_poa_rear_gain_percent", var_data((ssc_number_t)percent));
 
-	// annual_dc_nominal
-	percent = 0.;
-	// SEV: Apply Snow loss to loss diagram
-	if (annual_dc_nominal > 0) percent = 100 * annual_snow_loss / annual_dc_nominal;
-	assign("annual_dc_snow_loss_percent", var_data((ssc_number_t)percent));
+		// annual_dc_nominal
+		percent = 0.;
+		// SEV: Apply Snow loss to loss diagram
+		if (annual_dc_nominal > 0) percent = 100 * annual_snow_loss / annual_dc_nominal;
+		assign("annual_dc_snow_loss_percent", var_data((ssc_number_t)percent));
 
 		// apply clipping window loss
 		if (annual_dc_nominal > 0) percent = 100 * annualMpptVoltageClipping / annual_dc_nominal;
@@ -2619,26 +2619,26 @@ void cm_pvsamv1::exec( ) throw (general_error)
 		assign("annual_ac_perf_adj_loss_percent", var_data((ssc_number_t)percent));
 		sys_output *= (1.0 - percent / 100.0);
 
-	// total loss diagram losses for single-year simulation (life time losses not included)
-	std::vector<std::string> loss_components = {"annual_poa_shading_loss_percent", "annual_poa_soiling_loss_percent",
-                                             "annual_poa_cover_loss_percent", "annual_poa_rear_gain_percent",
-                                             "annual_dc_snow_loss_percent", "annual_dc_module_loss_percent",
-                                             "annual_dc_mppt_clip_loss_percent", "annual_dc_mismatch_loss_percent",
-                                             "annual_dc_diodes_loss_percent", "annual_dc_wiring_loss_percent",
-                                             "annual_dc_tracking_loss_percent", "annual_dc_nameplate_loss_percent",
-                                             "annual_dc_optimizer_loss_percent", "annual_dc_perf_adj_loss_percent",
-                                             "annual_dc_battery_loss_percent", "annual_ac_battery_loss_percent",
-                                             "annual_ac_inv_clip_loss_percent", "annual_ac_inv_pso_loss_percent",
-                                             "annual_ac_inv_pnt_loss_percent","annual_ac_inv_eff_loss_percent",
-                                             "annual_ac_wiring_loss_percent", "annual_xfmr_loss_percent",
-                                             "annual_ac_perf_adj_loss_percent"};
-	percent = 1.;
-	for (size_t i = 0; i < loss_components.size(); i++){
-	    percent *= (1. - as_number(loss_components[i])/100.);
+		// total loss diagram losses for single-year simulation (life time losses not included)
+		std::vector<std::string> loss_components = { "annual_poa_shading_loss_percent", "annual_poa_soiling_loss_percent",
+												 "annual_poa_cover_loss_percent", "annual_poa_rear_gain_percent",
+												 "annual_dc_snow_loss_percent", "annual_dc_module_loss_percent",
+												 "annual_dc_mppt_clip_loss_percent", "annual_dc_mismatch_loss_percent",
+												 "annual_dc_diodes_loss_percent", "annual_dc_wiring_loss_percent",
+												 "annual_dc_tracking_loss_percent", "annual_dc_nameplate_loss_percent",
+												 "annual_dc_optimizer_loss_percent", "annual_dc_perf_adj_loss_percent",
+												 "annual_dc_battery_loss_percent", "annual_ac_battery_loss_percent",
+												 "annual_ac_inv_clip_loss_percent", "annual_ac_inv_pso_loss_percent",
+												 "annual_ac_inv_pnt_loss_percent","annual_ac_inv_eff_loss_percent",
+												 "annual_ac_wiring_loss_percent", "annual_xfmr_loss_percent",
+												 "annual_ac_perf_adj_loss_percent" };
+		percent = 1.;
+		for (size_t i = 0; i < loss_components.size(); i++) {
+			percent *= (1. - as_number(loss_components[i]) / 100.);
+		}
+		assign("annual_total_loss_percent", var_data((ssc_number_t)(1. - percent) * 100.));
+		// annual_ac_net = system_output
 	}
-    assign("annual_total_loss_percent", var_data((ssc_number_t)(1.-percent)*100.));
-	// annual_ac_net = system_output
-
 #ifdef WITH_CHECKS
 	// check that ac_net = sys_output at this point
 		if (fabs(annual_ac_net - sys_output) / annual_ac_net > 0.00001)

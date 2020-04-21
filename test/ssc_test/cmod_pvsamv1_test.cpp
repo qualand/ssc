@@ -530,7 +530,7 @@ TEST_F(CMPvsamv1PowerIntegration_cmod_pvsamv1, NoFinancialModelLosses)
 
 /// Change half of all temperatures so that inv eff is derated by ~50% for half the year
 /// DC production & inverter efficiency both decrease as result
-TEST_F(CMPvsamv1PowerIntegration, InvTempDerate) {
+TEST_F(CMPvsamv1PowerIntegration_cmod_pvsamv1, InvTempDerate) {
 	var_data* weatherData = create_weatherdata_array(8760, 1);
 	ssc_data_unassign(data, "solar_resource_file");
 	var_table *vt = static_cast<var_table*>(data);
@@ -702,9 +702,8 @@ TEST_F(CMPvsamv1PowerIntegration_cmod_pvsamv1, reopt_sizing) {
     for (const auto& s : sections)
         ASSERT_TRUE(site->table.is_assigned(s));
 }
-}
 
-TEST_F(CMPvsamv1PowerIntegration, SingleTimestep)
+TEST_F(CMPvsamv1PowerIntegration_cmod_pvsamv1, SingleTimestep)
 {
 	//set up a weather data array and unassign the solar resource file
 	var_data* weatherData = create_weatherdata_array(1, 1);

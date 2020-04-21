@@ -132,7 +132,7 @@ Irradiance_IO::Irradiance_IO(compute_module* cm, std::string cmName)
 		tsShiftHours = 0.5;
 	}
 	else
-		throw compute_module::exec_error(cmName, "subhourly and non-annual weather files must specify the minute for each record");
+		throw exec_error(cmName, "subhourly and non-annual weather files must specify the minute for each record");
 
 	weatherDataProvider->header(&weatherHeader);
 
@@ -145,9 +145,9 @@ Irradiance_IO::Irradiance_IO(compute_module* cm, std::string cmName)
 		dtHour /= stepsPerHour;
 
 	if (weatherDataProvider->annualSimulation() && numberOfWeatherFileRecords % 8760 != 0 )
-		throw compute_module::exec_error(cmName, util::format("invalid number of data records (%zu): must be an integer multiple of 8760", numberOfWeatherFileRecords));
+		throw exec_error(cmName, util::format("invalid number of data records (%zu): must be an integer multiple of 8760", numberOfWeatherFileRecords));
 	if (weatherDataProvider->annualSimulation() && (stepsPerHour < 1 || stepsPerHour > 60))
-		throw compute_module::exec_error(cmName, util::format("%d timesteps per hour found. Weather data should be single year.", stepsPerHour));
+		throw exec_error(cmName, util::format("%d timesteps per hour found. Weather data should be single year.", stepsPerHour));
 
 	useWeatherFileAlbedo = cm->as_boolean("use_wf_albedo");
 	userSpecifiedMonthlyAlbedo = cm->as_vector_double("albedo");
@@ -467,7 +467,7 @@ void PVSystem_IO::SetupPOAInput()
 			for (size_t ii = 0; ii < Irradiance->numberOfWeatherFileRecords; ii++)
 			{
 				if (!wdprov->read(&wf)) {
-					throw compute_module::exec_error("pvsamv1", "could not read data line " + util::to_string((int)(ii + 1)) + " in weather file while loading POA data");
+					throw exec_error("pvsamv1", "could not read data line " + util::to_string((int)(ii + 1)) + " in weather file while loading POA data");
 				}
 				int month_idx = wf.month - 1;
 
@@ -571,7 +571,7 @@ void PVSystem_IO::SetupPOAInput()
 
 
 				if (tms[2] > 0) {
-					incidence(Subarrays[nn]->trackMode, Subarrays[nn]->tiltDegrees, Subarrays[nn]->azimuthDegrees, Subarrays[nn]->trackerRotationLimitDegrees, sun[1], sun[0], Subarrays[nn]->backtrackingEnabled, Subarrays[nn]->groundCoverageRatio, angle);
+					incidence(Subarrays[nn]->trackMode, Subarrays[nn]->tiltDegrees, Subarrays[nn]->azimuthDegrees, Subarrays[nn]->trackerRotationLimitDegrees, sun[1], sun[0], Subarrays[nn]->backtrackingEnabled, Subarrays[nn]->groundCoverageRatio, false, 0.0, angle);
 				}
 				else {
 					angle[0] = -999;
@@ -648,20 +648,20 @@ PVSystem_IO::PVSystem_IO(compute_module* cm, std::string cmName, Simulation_IO *
 		if (enableDCLifetimeLosses)
 		{
 			if (!Simulation->annualSimulation)
-				throw compute_module::exec_error(cmName, "Lifetime daily losses cannot be entered with non-annual weather data");
+				throw exec_error(cmName, "Lifetime daily losses cannot be entered with non-annual weather data");
 
 			std::vector<double> dc_lifetime_losses = cm->as_vector_double("dc_lifetime_losses");
 			if (dc_lifetime_losses.size() != Simulation->numberOfYears * 365)
-				throw compute_module::exec_error(cmName, "Length of the lifetime daily DC losses array must be equal to the analysis period * 365");
+				throw exec_error(cmName, "Length of the lifetime daily DC losses array must be equal to the analysis period * 365");
 		}
 		if (enableACLifetimeLosses)
 		{
 			if (!Simulation->annualSimulation)
-				throw compute_module::exec_error(cmName, "Lifetime daily losses cannot be entered with non-annual weather data");
+				throw exec_error(cmName, "Lifetime daily losses cannot be entered with non-annual weather data");
 
 			std::vector<double> ac_lifetime_losses = cm->as_vector_double("ac_lifetime_losses");
 			if (ac_lifetime_losses.size() != Simulation->numberOfYears * 365)
-				throw compute_module::exec_error(cmName, "Length of the lifetime daily AC losses array must be equal to the analysis period * 365");
+				throw exec_error(cmName, "Length of the lifetime daily AC losses array must be equal to the analysis period * 365");
 		}
 	}
 
