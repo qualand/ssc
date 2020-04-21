@@ -1,11 +1,13 @@
 #ifndef __LIB_TIME_TEST_H__
 #define __LIB_TIME_TEST_H__
 
+#include <math.h>
+
 #include "lib_util.h"
 #include <gtest/gtest.h>
 #include <vector>
 
-class libTimeTests : public ::testing::Test
+class libTimeTest_lib_time : public ::testing::Test
 {
 protected:
 

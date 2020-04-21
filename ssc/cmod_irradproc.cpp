@@ -91,7 +91,7 @@ public:
 		add_var_info( _cm_vtab_irradproc );
 	}
 
-	void exec( ) throw( general_error )
+	void exec( )
 	{
 		size_t count;
 		ssc_number_t *beam = 0, *glob = 0, *diff = 0;
@@ -202,7 +202,7 @@ public:
 			if ( irrad_mode == 1 ) x.set_global_beam( glob[i], beam[i] );
 			else if (irrad_mode == 2) x.set_global_diffuse(glob[i], diff[i]);
 			else x.set_beam_diffuse( beam[i], diff[i] );
-			x.set_surface( track_mode, tilt, azimuth, rotlim, en_backtrack, gcr );
+			x.set_surface( track_mode, tilt, azimuth, rotlim, en_backtrack, gcr, false, 0.0 ); //last two inputs are to force to a stow angle, which doesn't make sense for irradproc as a standalone cmod
 			
 			int code = x.calc();
 			if (code < 0)

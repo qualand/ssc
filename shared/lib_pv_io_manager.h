@@ -70,7 +70,7 @@ public:
 
 	void checkInit() const {
 		if (!init)
-			throw compute_module::exec_error("PV IO Manager", 
+			throw exec_error("PV IO Manager",
 				"Flag used without initialization.");
 	}
 
@@ -227,6 +227,7 @@ struct Simulation_IO
 	size_t stepsPerHour;
 	double dtHour; //fraction of an hour in a given timestep, e.g. for 15-minute data, ts_hour would be 0.25
 	flag useLifetimeOutput;
+	flag saveLifetimeVars;
 	flag annualSimulation; //flag to determine if the simulation is a normal, annual simulation with a single continuous year, or a non-annual/single timestep simulation
 };
 
@@ -267,6 +268,8 @@ struct PVSystem_IO
 	flag enableMismatchVoltageCalc;		///< Whether or not to compute mismatch between multiple subarrays attached to the same mppt input
 
 	std::vector<double> dcDegradationFactor; 
+	std::vector<double> dcLifetimeLosses;
+	std::vector<double> acLifetimeLosses;
 	double acDerate;
 	double acLossPercent;
 	double transmissionDerate;
@@ -292,8 +295,9 @@ struct PVSystem_IO
 	std::vector<ssc_number_t *> p_poaRear; 
 	std::vector<ssc_number_t *> p_derateSoiling; 
 	std::vector<ssc_number_t *> p_beamShadingFactor; 
-	std::vector<ssc_number_t *> p_temperatureCell; 
-	std::vector<ssc_number_t *> p_moduleEfficiency; 
+	std::vector<ssc_number_t *> p_temperatureCell;
+	std::vector<ssc_number_t *> p_temperatureCellSS; // steady state cell temperature
+	std::vector<ssc_number_t *> p_moduleEfficiency;
 	std::vector<ssc_number_t *> p_dcStringVoltage; /// An output vector containing dc string voltage for each subarray [V]
 	std::vector<ssc_number_t *> p_voltageOpenCircuit; /// Open circuit voltage of a string in the subarray [V]
 	std::vector<ssc_number_t *> p_currentShortCircuit; 
@@ -323,8 +327,6 @@ struct PVSystem_IO
 
 	// Degradation
 	ssc_number_t *p_dcDegradationFactor;
-	ssc_number_t *p_dcLifetimeLosses;
-	ssc_number_t *p_acLifetimeLosses;
 
 	// transformer loss outputs (single array)
 	ssc_number_t *p_transformerNoLoadLoss;
@@ -503,7 +505,8 @@ public:
 	double voltageOpenCircuit;  /// The DC open circuit voltage of the module [V]
 	double currentShortCircuit; /// The DC short circuit current of the module [A]
 	double dcEfficiency;		/// The DC conversion efficiency of the module [%]
-	double temperatureCellCelcius; /// The average cell temperature of the module [C]
+	double temperatureCellCelcius; /// The weighted moving average  cell temperature of the module [C]
+	double temperatureCellCelciusSS; /// The SS average cell temperature of the module [C]
 	double angleOfIncidenceModifier; /// The angle of incidence modifier on the total poa front-side irradiance [0-1]
 	
 };

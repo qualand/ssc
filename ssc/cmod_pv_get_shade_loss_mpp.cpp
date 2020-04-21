@@ -75,7 +75,7 @@ public:
 		add_var_info(_cm_vtab_pv_get_shade_loss_mpp);
 	}
 
-	void exec() throw(general_error)
+	void exec() override
 	{
 
 		size_t nrec, count;
@@ -436,4 +436,4 @@ public:
 	}
 };
 
-DEFINE_MODULE_ENTRY(pv_get_shade_loss_mpp, "PV get shade loss fraction for strings from Sara MacAlpine", 1)
+DEFINE_MODULE_ENTRY(pv_get_shade_loss_mpp, "PV get shade loss fraction for strings", 1)

@@ -62,7 +62,7 @@ public:
 		add_var_info( _cm_vtab_poacalib );
 	}
 
-	void exec( ) throw( general_error )
+	void exec( )
 	{
 
 		/* Changes input Beam and Diffuse irradiation so that they yield a POA equal to input POA using the Perez transposition model, while maintaining the input ratio between beam & diffuse.
@@ -112,7 +112,7 @@ public:
 					irrad x;
 					x.set_location(lat, lon, timezone);
 					x.set_time( year, m, (int)d, h, 30, 1.0  );
-					x.set_surface(0, tilt, az, 0, 0, 0);
+					x.set_surface(0, tilt, az, 0, 0, 0, false, 0.0);
 					x.set_sky_model(2, alb);
 					x.set_beam_diffuse(B, D);
 					double solaz, zen;

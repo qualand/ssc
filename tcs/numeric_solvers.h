@@ -109,6 +109,8 @@ private:
 	double m_y_err;
 	int m_iter;
 
+    double m_E_slope;
+
 	double check_against_limits(double x);
 
 	double calc_x_intercept(double x1, double y1, double x2, double y2);
@@ -168,14 +170,29 @@ public:
 	int solve(double x_guess_1, double x_guess_2, double y_target,
 		double &x_solved, double &tol_solved, int &iter_solved);
 		
-	int solve(S_xy_pair solved_pair_1, S_xy_pair solved_pair_2, double y_target,
-		double &x_solved, double &tol_solved, int &iter_solved);	
+    int solve(S_xy_pair solved_pair_1, double x_guess_2, double y_target,
+        double &x_solved, double &tol_solved, int &iter_solved);
+
+    int solve(S_xy_pair solved_pair_1, S_xy_pair solved_pair_2, double y_target,
+		double &x_solved, double &tol_solved, int &iter_solved);
+
+    int solve(std::vector<double> x_solved_vector, std::vector<double> y_solved_vector, double y_target,
+        double &x_solved, double &tol_solved, int &iter_solved);
+
+    bool is_last_x_best(double & x_at_lowest, double y_target);
+
+    bool get_min_abs_diff_no_err(C_monotonic_eq_solver::S_eq_chars & s_eq_chars_min_abs_diff,
+        double y_target);
 
 	int call_mono_eq(double x, double *y);
+
+    double call_mono_eq_calc_y_err(double x, double y_target);
 
 	bool did_solver_find_positive_error(int solver_exit_mode);
 
 	bool did_solver_find_negative_error(int solver_exit_mode);
+
+    double get_E_slope();
 
 	const S_eq_chars get_last_mono_eq_call();
 

@@ -132,7 +132,7 @@ void C_csp_weatherreader::timestep_call(const C_csp_solver_sim_info &p_sim_info)
 	if( sunn[2] > 0.0087 )
 	{
 		/* sun elevation > 0.5 degrees */
-		incidence(m_trackmode, m_tilt, m_azimuth, 45.0, sunn[1], sunn[0], 0, 0, angle);
+		incidence(m_trackmode, m_tilt, m_azimuth, 45.0, sunn[1], sunn[0], 0, 0, false, 0.0, angle);
 		perez(sunn[8], m_rec.dn, m_rec.df, 0.2, angle[0], angle[1], sunn[1], poa, diffc);		 // diffuse shading factor not enabled (set to 1.0 by default)
 	}
 	
@@ -167,6 +167,18 @@ void C_csp_weatherreader::timestep_call(const C_csp_solver_sim_info &p_sim_info)
 
 	ms_outputs.m_hor_beam = m_rec.dn*cos(sunn[1]);
 	
+    // Recalculate humidities if necessary
+    if (m_rec.rhum != m_rec.rhum && m_rec.tdry == m_rec.tdry && m_rec.tdew == m_rec.tdew)
+    {
+        ms_outputs.m_rhum = (double)calc_humidity((float)m_rec.tdry, (float)m_rec.tdew);
+    }
+
+    if (m_rec.twet != m_rec.twet &&
+        m_rec.tdry == m_rec.tdry && ms_outputs.m_rhum == ms_outputs.m_rhum && m_rec.pres == m_rec.pres)
+    {
+        ms_outputs.m_twet = calc_twet(m_rec.tdry, ms_outputs.m_rhum, m_rec.pres);
+    }
+    
 	// Recalculate sunrise and sunset if necessary
 	if( m_rec.day != day_prev )
 	{

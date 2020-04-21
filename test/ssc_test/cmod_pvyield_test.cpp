@@ -8,7 +8,7 @@ using std::cout;
 using std::endl;
 
 /// Test PVSAMv1 with inputs from PVYield
-TEST_F(CMPvYieldTimo, DefaultTimoModel)
+TEST_F(CMPvYieldTimo, DefaultTimoModel_cmod_pvsamv1)
 {
 	pvyield_no_financial_meteo(data);
 
@@ -20,7 +20,7 @@ TEST_F(CMPvYieldTimo, DefaultTimoModel)
 	{
 		ssc_number_t annual_energy;
 		ssc_data_get_number(data, "annual_energy", &annual_energy);
-		EXPECT_NEAR(annual_energy, 7407907, 7407907e-4) << "Annual energy.";
+		EXPECT_NEAR(annual_energy, 7380478, 7380478e-4) << "Annual energy.";
 
 		ssc_number_t capacity_factor;
 		ssc_data_get_number(data, "capacity_factor", &capacity_factor);
@@ -28,7 +28,7 @@ TEST_F(CMPvYieldTimo, DefaultTimoModel)
 
 		ssc_number_t kwh_per_kw;
 		ssc_data_get_number(data, "kwh_per_kw", &kwh_per_kw);
-		EXPECT_NEAR(kwh_per_kw, 1771.227905, m_error_tolerance_hi) << "Energy yield";
+		EXPECT_NEAR(kwh_per_kw, 1764.669, m_error_tolerance_hi) << "Energy yield";
 
 		ssc_number_t performance_ratio;
 		ssc_data_get_number(data, "performance_ratio", &performance_ratio);
@@ -37,7 +37,7 @@ TEST_F(CMPvYieldTimo, DefaultTimoModel)
 }
 
 /// Test PVSAMv1 with inputs from PVYield and user support 80603 with ,eteo weather file
-TEST_F(CMPvYieldTimo, TimoModel80603_meteo)
+TEST_F(CMPvYieldTimo, TimoModel80603_meteo_cmod_pvsamv1)
 {
 	// first set of results for Phoenix and second set for meteo weather file.
 	pvyield_user_support_80603_meteo(data);
@@ -50,7 +50,7 @@ TEST_F(CMPvYieldTimo, TimoModel80603_meteo)
 	{
 		ssc_number_t annual_energy;
 		ssc_data_get_number(data, "annual_energy", &annual_energy);
-		EXPECT_NEAR(annual_energy, 7473811, 7473811e-4) << "Annual energy.";
+		EXPECT_NEAR(annual_energy, 7441557, 7441557e-4) << "Annual energy.";
 
 		ssc_number_t capacity_factor;
 		ssc_data_get_number(data, "capacity_factor", &capacity_factor);
@@ -58,7 +58,7 @@ TEST_F(CMPvYieldTimo, TimoModel80603_meteo)
 
 		ssc_number_t kwh_per_kw;
 		ssc_data_get_number(data, "kwh_per_kw", &kwh_per_kw);
-		EXPECT_NEAR(kwh_per_kw, 1786.99, m_error_tolerance_hi) << "Energy yield";
+		EXPECT_NEAR(kwh_per_kw, 1779.27, m_error_tolerance_hi) << "Energy yield";
 
 		ssc_number_t performance_ratio;
 		ssc_data_get_number(data, "performance_ratio", &performance_ratio);
@@ -67,7 +67,7 @@ TEST_F(CMPvYieldTimo, TimoModel80603_meteo)
 }
 
 /// Test PVSAMv1 with inputs from PVYield and user support 80603 AZ weather file
-TEST_F(CMPvYieldTimo, TimoModel80603_AZ)
+TEST_F(CMPvYieldTimo, TimoModel80603_AZ_cmod_pvsamv1)
 {
 	// first set of results for Phoenix and second set for meteo weather file.
 	pvyield_user_support_80603_AZ(data);
@@ -80,7 +80,7 @@ TEST_F(CMPvYieldTimo, TimoModel80603_AZ)
 	{
 		ssc_number_t annual_energy;
 		ssc_data_get_number(data, "annual_energy", &annual_energy);
-		EXPECT_NEAR(annual_energy, 8227336.5, 8227336.5e-4) << "Annual energy.";
+		EXPECT_NEAR(annual_energy, 8199354, 8199354e-4) << "Annual energy.";
 
 		ssc_number_t capacity_factor;
 		ssc_data_get_number(data, "capacity_factor", &capacity_factor);
@@ -88,7 +88,7 @@ TEST_F(CMPvYieldTimo, TimoModel80603_AZ)
 
 		ssc_number_t kwh_per_kw;
 		ssc_data_get_number(data, "kwh_per_kw", &kwh_per_kw);
-		EXPECT_NEAR(kwh_per_kw, 1967.15, m_error_tolerance_hi) << "Energy yield";
+		EXPECT_NEAR(kwh_per_kw, 1960.46, m_error_tolerance_hi) << "Energy yield";
 
 		ssc_number_t performance_ratio;
 		ssc_data_get_number(data, "performance_ratio", &performance_ratio);
@@ -98,7 +98,7 @@ TEST_F(CMPvYieldTimo, TimoModel80603_AZ)
 
 
 /// Test PVSAMv1 with default no-financial model and sytem design page changes
-TEST_F(CMPvYieldTimo, NoFinancialModelSystemDesign)
+TEST_F(CMPvYieldTimo, NoFinancialModelSystemDesign_cmod_pvsamv1)
 {
 	pvsamMPPT_nofinancial_default(data);
 
@@ -114,7 +114,6 @@ TEST_F(CMPvYieldTimo, NoFinancialModelSystemDesign)
 	pairs["subarray1_track_mode"] = 0;
 
 	std::vector<double> annual_energy_expected = { 183243, 242540, 258572, 216242, 192975 };
-	size_t i;
 	for (int tracking_option = 0; tracking_option != 5; tracking_option++)
 	{
 		// update tracking option
@@ -126,7 +125,6 @@ TEST_F(CMPvYieldTimo, NoFinancialModelSystemDesign)
 			ssc_number_t annual_energy;
 			ssc_data_get_number(data, "annual_energy", &annual_energy);
 			EXPECT_NEAR(annual_energy, annual_energy_expected[tracking_option], m_error_tolerance_hi) << "Annual energy.";
-			i = tracking_option;
 			//cout << "-----------------------------------------------------" << endl;
 			//cout << i << " of " << annual_energy_expected.size() << " track mode Computed annual energy : " << annual_energy << endl;
 			//cout << i << " of " << annual_energy_expected.size() << " track mode Expected annual energy : " << annual_energy_expected[i] << endl;
@@ -187,7 +185,7 @@ TEST_F(CMPvYieldTimo, NoFinancialModelSystemDesign)
 	std::vector<double> subarray4_track_mode = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4 };
 	annual_energy_expected = { 167392, 176331, 183243, 166251, 175833, 183243, 171952, 178321, 183243, 171952, 178321, 183243, 183243, 183235, 183243, 183243, 183243, 183243, 183243, 183243, 183243, 183243, 183243, 183243, 183243, 183243, 177310, 182927, 162456, 176883, 182902, 160961, 179014, 183024, 168431, 179014, 183024, 168431, 183243, 183243, 183243, 183243, 183243, 198796, 205187, 192695, 186088, 183243, 201501, 206750, 193370, 186290, 183243, 195419, 198926, 189995, 185277, 183243, 195419, 198926, 189995, 185277 };
 
-	for (int i = 0; i != annual_energy_expected.size(); i++)
+	for (size_t i = 0; i != annual_energy_expected.size(); i++)
 	{
 		pairs["enable_mismatch_vmax_calc"] = enable_mismatch[i];
 		pairs["subarray1_azimuth"] = subarray1_azimuth[i];

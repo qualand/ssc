@@ -352,7 +352,9 @@ int C_csp_solver::C_mono_eq_pc_target_tes_dc__T_cold::operator()(double T_htf_co
 		}
 		else
 		{
-			throw(C_csp_exception(util::format("At time = %lg, C_csp_solver::C_mono_eq_pc_target_tes_dc__T_cold failed with Eq Solver Code %d", mpc_csp_solver->mc_kernel.mc_sim_info.ms_ts.m_time, m_dot_code), ""));
+            *diff_T_htf_cold = std::numeric_limits<double>::quiet_NaN();
+            return -3;
+            //throw(C_csp_exception(util::format("At time = %lg, C_csp_solver::C_mono_eq_pc_target_tes_dc__T_cold failed with Eq Solver Code %d", mpc_csp_solver->mc_kernel.mc_sim_info.ms_ts.m_time, m_dot_code), ""));
 		}
 	}
 
@@ -1712,7 +1714,7 @@ int C_csp_solver::C_MEQ_cr_on__pc_target__tes_empty__T_htf_cold::operator()(doub
 	}
 
 	// Solve PC model with calculated inlet and timestep values
-	solve_pc(time_max, c_eq.m_T_htf_pc_hot, c_eq.m_m_dot_pc);
+	solve_pc(time_solved, c_eq.m_T_htf_pc_hot, c_eq.m_m_dot_pc);
 
 	*diff_T_htf_cold = (mpc_csp_solver->mc_pc_out_solver.m_T_htf_cold - T_htf_cold) / T_htf_cold;
 	m_step = time_solved;	//[s]

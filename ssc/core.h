@@ -115,6 +115,41 @@ extern const var_info var_info_invalid;
 
 class handler_interface; // forward decl
 
+class check_error : public general_error
+{
+public:
+    check_error( const std::string &cur_var, const std::string &reason, const std::string &expr )
+            : general_error( "check fail: reason " + reason + ", with '" + expr + "' for: " + cur_var ) {  }
+};
+
+class constraint_error : public general_error
+{
+public:
+    constraint_error( const std::string &cur_var, const std::string &reason, const std::string &expr )
+            : general_error( "constraint fail: reason " + reason + ", with '" + expr + "' for: " + cur_var ) {  }
+};
+
+class exec_error : public general_error
+{
+public:
+    exec_error( const std::string &mod_name, const std::string &reason )
+            : general_error( "exec fail(" + mod_name + "): " + reason ) {  }
+};
+
+class mismatch_error : public general_error
+{
+public:
+    mismatch_error( int required, int specified, const std::string &reason )
+            : general_error(util::format("size mismatch error with %d required, but %d given: %s", required, specified, reason.c_str())) {  }
+};
+
+class timestep_error : public general_error
+{
+public:
+    timestep_error( double start, double end, double step, const char *reason )
+            : general_error( util::format("timestep fail(%lg %lg %lg): %s", start, end, step, reason) ) {  }
+};
+
 class compute_module
 {
 public:
@@ -122,63 +157,13 @@ public:
 	{
 	public:
 		log_item() { }
-		log_item(int t, const std::string &s, float f=-1.0) 
-			: type(t), text(s), time(f) {  }
+		log_item(int t, std::string s, float f=-1.0)
+			: type(t), text(move(s)), time(f) {  }
 
 		int type;
+
 		std::string text;
 		float time;
-	};
-	
-	class general_error : public std::exception
-	{
-	public:
-		general_error(const std::string &s, float t=-1.0) : err_text(s), time(t) { }
-		virtual ~general_error() throw() { }
-		std::string err_text;
-		float time;
-	};
-
-	class cast_error : public general_error
-	{
-	public:
-		cast_error(const char *target_type, var_data &source, const std::string &name)
-			: general_error( "cast fail: <" + std::string(target_type) + "> from " + std::string(source.type_name()) + " for: " + name ) { }
-	};
-
-	class check_error : public general_error
-	{
-	public:
-		check_error( const std::string &cur_var, const std::string &reason, const std::string &expr )
-			: general_error( "check fail: reason " + reason + ", with '" + expr + "' for: " + cur_var ) {  }
-	};
-
-	class constraint_error : public general_error
-	{
-	public:
-		constraint_error( const std::string &cur_var, const std::string &reason, const std::string &expr )
-			: general_error( "constraint fail: reason " + reason + ", with '" + expr + "' for: " + cur_var ) {  }
-	};
-
-	class exec_error : public general_error
-	{
-	public:
-		exec_error( const std::string &mod_name, const std::string &reason )
-			: general_error( "exec fail(" + mod_name + "): " + reason ) {  }
-	};
-
-	class mismatch_error : public general_error
-	{
-	public:
-		mismatch_error( int required, int specified, const std::string &reason )
-			: general_error(util::format("size mismatch error with %d required, but %d given: %s", required, specified, reason.c_str())) {  }
-	};
-
-	class timestep_error : public general_error
-	{
-	public:
-		timestep_error( double start, double end, double step, const char *reason )
-			: general_error( util::format("timestep fail(%lg %lg %lg): %s", start, end, step, reason) ) {  }
 	};
 
 public:
@@ -210,9 +195,14 @@ public:
 	virtual bool on_extproc_output( const std::string & ) { return false; }	
 	
 protected:
+    /* these members are take values only during a call to 'compute(..)'
+  and are NULL otherwise */
+    handler_interface   *m_handler;
+    var_table           *m_vartab;
+
 	/* must be implemented to perform calculations
 	   note: can throw exceptions of type 'compute_module::error' */
-	virtual void exec( ) throw( general_error ) = 0;
+	virtual void exec( ) = 0;
 
 	
 	/* can be called in constructors to build up the variable table references */
@@ -226,52 +216,52 @@ protected:
 
 public:
 	/* for working with input/output/inout variables during 'compute'*/
-	const var_info &info( const std::string &name ) throw( general_error );
-	bool is_ssc_array_output( const std::string &name ) throw( general_error );
-	var_data *lookup( const std::string &name ) throw( general_error );
-	var_data *assign( const std::string &name, const var_data &value ) throw( general_error );
-	ssc_number_t *allocate( const std::string &name, size_t length ) throw( general_error );
-	ssc_number_t *allocate( const std::string &name, size_t nrows, size_t ncols ) throw( general_error );
-	util::matrix_t<ssc_number_t>& allocate_matrix( const std::string &name, size_t nrows, size_t ncols ) throw( general_error );
-	var_data &value( const std::string &name ) throw( general_error );
-	bool is_assigned( const std::string &name ) throw( general_error );
-	size_t as_unsigned_long(const std::string &name) throw(general_error);
-	int as_integer( const std::string &name ) throw( general_error );
-	bool as_boolean( const std::string &name ) throw( general_error );
-	float as_float( const std::string &name ) throw( general_error );
-	ssc_number_t as_number( const std::string &name ) throw( general_error );
-	double as_double( const std::string &name ) throw( general_error );
-	const char *as_string( const std::string &name ) throw( general_error );
-	ssc_number_t *as_array( const std::string &name, size_t *count ) throw( general_error );
-	std::vector<int> as_vector_integer(const std::string &name) throw(general_error);
-	std::vector<ssc_number_t> as_vector_ssc_number_t(const std::string &name) throw(general_error);
-	std::vector<double> as_vector_double( const std::string &name ) throw( general_error );
-	std::vector<float> as_vector_float(const std::string &name) throw(general_error);
-	std::vector<bool> as_vector_bool(const std::string &name) throw(general_error);
-	std::vector<size_t> as_vector_unsigned_long(const std::string &name) throw(general_error);
-	ssc_number_t *as_matrix( const std::string &name, size_t *rows, size_t *cols ) throw( general_error );
-	util::matrix_t<double> as_matrix(const std::string & name) throw(general_error);
-	util::matrix_t<size_t> as_matrix_unsigned_long(const std::string & name) throw(general_error);
-	util::matrix_t<double> as_matrix_transpose(const std::string & name) throw(general_error);
-	bool get_matrix(const std::string &name, util::matrix_t<ssc_number_t> &mat) throw(general_error);
+	const var_info &info( const std::string &name );
+	bool is_ssc_array_output( const std::string &name );
+	var_data *lookup( const std::string &name );
+	var_data *assign( const std::string &name, const var_data &value );
+	ssc_number_t *allocate( const std::string &name, size_t length );
+	ssc_number_t *allocate( const std::string &name, size_t nrows, size_t ncols );
+	util::matrix_t<ssc_number_t>& allocate_matrix( const std::string &name, size_t nrows, size_t ncols );
+	var_data &value( const std::string &name );
+	bool is_assigned( const std::string &name );
+	size_t as_unsigned_long(const std::string &name);
+	int as_integer( const std::string &name );
+	bool as_boolean( const std::string &name );
+	float as_float( const std::string &name );
+	ssc_number_t as_number( const std::string &name );
+	double as_double( const std::string &name );
+	const char *as_string( const std::string &name );
+	ssc_number_t *as_array( const std::string &name, size_t *count );
+	std::vector<int> as_vector_integer(const std::string &name);
+	std::vector<ssc_number_t> as_vector_ssc_number_t(const std::string &name);
+	std::vector<double> as_vector_double( const std::string &name );
+	std::vector<float> as_vector_float(const std::string &name);
+	std::vector<bool> as_vector_bool(const std::string &name);
+	std::vector<size_t> as_vector_unsigned_long(const std::string &name);
+	ssc_number_t *as_matrix( const std::string &name, size_t *rows, size_t *cols );
+	util::matrix_t<double> as_matrix(const std::string & name);
+	util::matrix_t<size_t> as_matrix_unsigned_long(const std::string & name);
+	util::matrix_t<double> as_matrix_transpose(const std::string & name);
+	bool get_matrix(const std::string &name, util::matrix_t<ssc_number_t> &mat);
 
-	size_t check_timestep_seconds( double t_start, double t_end, double t_step ) throw( timestep_error );
+	size_t check_timestep_seconds( double t_start, double t_end, double t_step ) ;
 	
-	ssc_number_t accumulate_annual(const std::string &hourly_var, const std::string &annual_var, double scale=1.0) throw(exec_error);
-	ssc_number_t *accumulate_monthly(const std::string &hourly_var, const std::string &annual_var, double scale=1.0) throw(exec_error);
+	ssc_number_t accumulate_annual(const std::string &hourly_var, const std::string &annual_var, double scale=1.0);
+	ssc_number_t *accumulate_monthly(const std::string &hourly_var, const std::string &annual_var, double scale=1.0);
 
-	ssc_number_t accumulate_annual_for_year(const std::string &hourly_var, const std::string &annual_var, double scale, size_t step_per_hour, size_t year = 1, size_t steps = 8760) throw(exec_error);
-	ssc_number_t *accumulate_monthly_for_year(const std::string &hourly_var, const std::string &annual_var, double scale, size_t step_per_hour, size_t year = 1) throw(exec_error);
+	ssc_number_t accumulate_annual_for_year(const std::string &hourly_var, const std::string &annual_var, double scale, size_t step_per_hour, size_t year = 1, size_t steps = 8760);
+	ssc_number_t *accumulate_monthly_for_year(const std::string &hourly_var, const std::string &annual_var, double scale, size_t step_per_hour, size_t year = 1);
 
 private:
 	// called by 'compute' as necessary for precheck and postcheck
-	bool verify(const std::string &phase, int var_types) throw( general_error );
+	bool verify(const std::string &phase, int var_types);
 	
-	bool check_required( const std::string &name ) throw( general_error );
-	bool check_constraints( const std::string &name, std::string &fail_text ) throw( general_error );
+	bool check_required( const std::string &name );
+	bool check_constraints( const std::string &name, std::string &fail_text );
 
 	// helper functions for check_required
-	ssc_number_t get_operand_value( const std::string &input, const std::string &cur_var_name ) throw( general_error );
+	ssc_number_t get_operand_value( const std::string &input, const std::string &cur_var_name );
 
 	var_data m_null_value;
 	
@@ -279,11 +269,6 @@ private:
 	std::vector< log_item > m_loglist;
 	
 	unordered_map< std::string, var_info* > *m_infomap;
-
-	/* these members are take values only during a call to 'compute(..)'
-	  and are NULL otherwise */
-	handler_interface   *m_handler;
-	var_table           *m_vartab;
 };
 
 

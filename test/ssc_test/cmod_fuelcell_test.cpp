@@ -3,7 +3,7 @@
 #include "cmod_fuelcell_test.h"
 
 /// Test PVSAMv1 with all defaults and no-financial model
-TEST_F(CMFuelCell, NoFinancialModelFixed) {
+TEST_F(CMFuelCell, NoFinancialModelFixed_cmod_fuelcell) {
 
 	// Run with fixed output
 	int errors = run_module(data, "fuelcell");
@@ -31,7 +31,7 @@ TEST_F(CMFuelCell, NoFinancialModelFixed) {
 	}
 }
 /// Test PVSAMv1 with all defaults and no-financial model
-TEST_F(CMFuelCell, NoFinancialModelFixedLifetime) {
+TEST_F(CMFuelCell, NoFinancialModelFixedLifetime_cmod_fuelcell) {
 
 	// Run with fixed output
 	ssc_number_t n_years;
@@ -56,7 +56,7 @@ TEST_F(CMFuelCell, NoFinancialModelFixedLifetime) {
 	}
 }
 /// Test PVSAMv1 with all defaults and no-financial model
-TEST_F(CMFuelCell, FuelCellBattery) {
+TEST_F(CMFuelCell, FuelCellBattery_cmod_fuelcell) {
 
 	// Run with fixed output
 	ssc_data_set_number(data, "system_use_lifetime_output", 1);
@@ -75,7 +75,7 @@ TEST_F(CMFuelCell, FuelCellBattery) {
 			ssc_number_t * grid_to_load = GetArray("grid_to_load", n);
 			ssc_number_t * load = GetArray("load", n);
 
-			for (size_t i = 0; i < n; i += interval) {
+			for (int i = 0; i < n; i += (int)interval) {
 				EXPECT_LT(fabs(load[i] - (fc_to_load[i] + pv_to_load[i] + batt_to_load[i] + grid_to_load[i])), 1.0);
 			}
 

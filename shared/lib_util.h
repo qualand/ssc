@@ -27,8 +27,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include <cassert>
+#include <stdexcept>
 
 #include <unordered_map>
+
 using std::unordered_map;
 
 #ifdef _MSC_VER
@@ -44,10 +46,14 @@ Define _DEBUG if compile with debugging
 
 */
 
-#if defined(_DEBUG) && defined(_MSC_VER) && defined(_WIN32) && !defined(_WIN64)
-#define VEC_ASSERT(x) {if(!(x)) _asm{int 0x03}}
+#if defined(_MSC_VER) && defined(_WIN32) && !defined(_WIN64)
+#define UTIL_ASSERT(x) {if(!(x)) throw std::runtime_error("matrix_t access '" + std::string(__func__) + "' invalid access.");}
 #else
-#define VEC_ASSERT(X) assert(X)
+#define UTIL_ASSERT(X) {if(!(X)) throw std::runtime_error("matrix_t method '" + std::string(__func__) + "' invalid access.");}
+#endif
+
+#if defined(_DEBUG)
+#define _LIB_UTIL_CHECK_
 #endif
 
 #define RCINDEX(arr, ncols, r, c) arr[ncols*r+c]
@@ -64,9 +70,12 @@ Define _DEBUG if compile with debugging
 #define RTOD 57.295779513082320876798154814105
 #endif
 
-
+#ifndef MAX
 #define MAX(a,b) ( (a)>(b) ? (a) : (b) )
+#endif
+#ifndef MIN
 #define MIN(a,b) ( (a)<(b) ? (a) : (b) )
+#endif
 
 #define sind(x) sin( DTOR*(x) )
 #define cosd(x) cos( DTOR*(x) )
@@ -113,6 +122,8 @@ namespace util
 	size_t hour_of_day(size_t hour_of_year); /* return the hour of day (0 - 23) given the hour of year (0 - 8759) */
 	double percent_of_year(int month, int hours); /* returns the fraction of a year, based on months and hours */
 	int month_of(double time); /* hour: 0 = jan 1st 12am-1am, returns 1-12 */
+	int day_of(double time); /* hour: 0 = jan 1st Monday 12am-1am, returns 0-6 */
+	int week_of(double time); /* hour: 0 = jan 1st Monday 12am-1am, returns 0-6 */
 	int day_of_month(int month, double time); /* month: 1-12 time: hours, starting 0=jan 1st 12am, returns 1-nday*/
 	int days_in_month(int month); /*month: 0-11, return 0-30, depending on the month*/
 	void month_hour(size_t hour_of_year, size_t & out_month, size_t & out_hour); /*given the hour of year, return the month, and hour of day*/
@@ -222,32 +233,32 @@ namespace util
 		}
 		inline T &at(size_t r, size_t c)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[r][c];
 		}
 
 		inline const T &at(size_t r, size_t c) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[r][c];
 		}
 		
 		inline T &operator()(size_t r, size_t c)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[r][c];
 		}
 
 		inline const T &operator()(size_t r, size_t c) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[r][c];
 		}
@@ -430,78 +441,88 @@ namespace util
 		{
 			resize_fill( 1, len, val );
 		}
+
+        void resize_preserve(size_t nr, size_t nc, const T &val){
+            matrix_t<T> old( *this );
+            resize(nr, nc);
+            fill(val);
+            for (size_t r=0; r<nr && r<old.nrows(); r++)
+                for (size_t c=0; c<nc && c<old.ncols(); c++)
+                    at(r,c) = old(r,c);
+        }
+
 		void set_value(const T &val, size_t r, size_t c)
 		{
 			t_array[n_cols*r + c] = val;
 		}
 		inline T &at(size_t i)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( i >= 0 && i < n_rows*n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( i >= 0 && i < n_rows*n_cols );
 	#endif
 			return t_array[i];
 		}
 
 		inline const T&at(size_t i) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( i >= 0 && i < n_rows*n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( i >= 0 && i < n_rows*n_cols );
 	#endif
 			return t_array[i];
 		}
 		
 		inline T &at(size_t r, size_t c)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[n_cols*r+c];
 		}
 
 		inline const T &at(size_t r, size_t c) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[n_cols*r+c];
 		}
 		
 		inline T &operator()(size_t r, size_t c)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[n_cols*r+c];
 		}
 
 		inline const T &operator()(size_t r, size_t c) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols );
 	#endif
 			return t_array[n_cols*r+c];
 		}
 		
 		T operator[] (size_t i) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( i >= 0 && i < n_rows*n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( i >= 0 && i < n_rows*n_cols );
 	#endif
 			return t_array[i];
 		}
 		
 		T &operator[] (size_t i)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( i >= 0 && i < n_rows*n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( i >= 0 && i < n_rows*n_cols );
 	#endif
 			return t_array[i];
 		}
 		
         matrix_t row(const size_t r) const
         {
-    #ifdef _DEBUG
-            VEC_ASSERT(r >= 0 && r < n_rows);
+    #ifdef _LIB_UTIL_CHECK_
+            UTIL_ASSERT(r >= 0 && r < n_rows);
     #endif
             matrix_t<T> array(n_cols);
             for (size_t i = 0; i < n_cols; i++)
@@ -511,8 +532,8 @@ namespace util
 
         matrix_t col(const size_t c) const
         {
-    #ifdef _DEBUG
-            VEC_ASSERT(c >= 0 && c < n_cols);
+    #ifdef _LIB_UTIL_CHECK_
+            UTIL_ASSERT(c >= 0 && c < n_cols);
     #endif
             matrix_t<T> array(n_rows);
             for (size_t i = 0; i < n_rows; i++)
@@ -710,32 +731,32 @@ namespace util
 		
 		inline T &at(size_t r, size_t c, size_t l)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols && l >= 0 && l < n_layers);
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols && l >= 0 && l < n_layers);
 	#endif
 			return t_array[n_cols*(n_rows*l + r)+c];
 		}
 
 		inline const T &at(size_t r, size_t c, size_t l) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols && l >= 0 && l < n_layers);
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( r >= 0 && r < n_rows && c >= 0 && c < n_cols && l >= 0 && l < n_layers);
 	#endif
 			return t_array[n_cols*(n_rows*l + r)+c];
 		}
 		
 		T operator[] (size_t i) const
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( i >= 0 && i < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( i >= 0 && i < n_cols );
 	#endif
 			return t_array[i];
 		}
 		
 		T &operator[] (size_t i)
 		{
-	#ifdef _DEBUG
-			VEC_ASSERT( i >= 0 && i < n_cols );
+	#ifdef _LIB_UTIL_CHECK_
+			UTIL_ASSERT( i >= 0 && i < n_cols );
 	#endif
 			return t_array[i];
 		}
@@ -792,6 +813,8 @@ namespace util
 	double interpolate(double x1, double y1, double x2, double y2, double xValueToGetYValueFor);
 	double linterp_col( const matrix_t<double> &mat, size_t ixcol, double xval, size_t iycol );
 	bool translate_schedule(int tod[8760], const matrix_t<double> &wkday, const matrix_t<double> &wkend, int min_val, int max_val);
+
+	std::vector<double> frequency_table(double* values, size_t n_vals, double bin_width);
 };
 
 

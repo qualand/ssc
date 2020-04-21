@@ -275,7 +275,7 @@ public:
 		add_var_info(vtab_technology_outputs);
 	}
 
-	void exec( ) throw( general_error )
+	void exec( )
 	{
 		static int nday[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
@@ -619,9 +619,9 @@ public:
 			//	Messages.Add("failed to read weather file data line");
 			//	return SAMSIM_ERR;
 			//}
-			if (wf.rhum > 200.0)
+			if (std::isnan(wf.rhum))
 			{
-				throw exec_error("biopower", "weather file does not contain relative humidity data, use complete weather file");
+				throw exec_error("biopower", "weather file does not contain relative humidity data required to calculate air moisture");
 				return;
 			}
 			int iMonth = util::month_of((double)istep) - 1;

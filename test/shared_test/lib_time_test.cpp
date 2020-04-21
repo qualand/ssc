@@ -2,7 +2,7 @@
 #include "lib_time.h"
 
 // Single year is 60 min, lifetime is 30 min, 25 years
-TEST_F(libTimeTests, TestLifetimeInterpolation)
+TEST_F(libTimeTest_lib_time, single_year_to_lifetime_interpolated_Lifetime)
 {
 	is_lifetime = true;
 	std::vector<float> lifetime_from_single;
@@ -26,7 +26,7 @@ TEST_F(libTimeTests, TestLifetimeInterpolation)
 	}
 
 }
-TEST_F(libTimeTests, TestSameSizeSingleYear)
+TEST_F(libTimeTest_lib_time, single_year_to_lifetime_interpolated_SingleYear)
 {
 	is_lifetime = false;
 	std::vector<float> lifetime_from_single;
@@ -47,7 +47,29 @@ TEST_F(libTimeTests, TestSameSizeSingleYear)
 	}
 }
 
-TEST_F(libTimeTests, TestSameSizeSubhourlySingleYear)
+TEST_F(libTimeTest_lib_time, single_year_to_lifetime_interpolated_SingleValue)
+{
+    is_lifetime = false;
+    std::vector<float> lifetime_from_single;
+    size_t n_rec_lifetime = 8760;
+    size_t n_rec_singleyear;
+    std::vector<float> single_val = {1.};
+    double dt_hour;
+    single_year_to_lifetime_interpolated<float>(is_lifetime, n_years, n_rec_lifetime,
+                                                single_val, lifetime_from_single, n_rec_singleyear, dt_hour);
+
+    EXPECT_EQ(n_rec_lifetime, util::hours_per_year);
+    EXPECT_EQ(n_rec_singleyear, util::hours_per_year);
+    EXPECT_EQ(dt_hour, 1.0);
+    EXPECT_EQ(lifetime_from_single.size(), n_rec_lifetime);
+
+
+    for (size_t i = 0; i < n_rec_singleyear; i += increment) {
+        EXPECT_EQ(lifetime_from_single[i], 1);
+    }
+}
+
+TEST_F(libTimeTest_lib_time, single_year_to_lifetime_interpolated_SingleYearSubhourly)
 {
 	is_lifetime = false;
 	std::vector<float> lifetime_from_single;
@@ -67,7 +89,7 @@ TEST_F(libTimeTests, TestSameSizeSubhourlySingleYear)
 	}
 }
 
-TEST_F(libTimeTests, TestSameSizeSubhourlyLifetime)
+TEST_F(libTimeTest_lib_time, single_year_to_lifetime_interpolated_LifetimeSubhourly)
 {
 	is_lifetime = true;
 	std::vector<float> lifetime_from_single;
@@ -92,7 +114,7 @@ TEST_F(libTimeTests, TestSameSizeSubhourlyLifetime)
 }
 
 // Test downsample
-TEST_F(libTimeTests, TestLifetimeDownsample)
+TEST_F(libTimeTest_lib_time, single_year_to_lifetime_interpolated_DownsampleLifetime)
 {
 	is_lifetime = true;
 	std::vector<float> lifetime_from_single;
@@ -117,7 +139,7 @@ TEST_F(libTimeTests, TestLifetimeDownsample)
 }
 
 // Test downsample
-TEST_F(libTimeTests, TestSingleyearDownsample)
+TEST_F(libTimeTest_lib_time, single_year_to_lifetime_interpolated_DownsampleSingleYear)
 {
 	is_lifetime = false;
 	std::vector<float> lifetime_from_single;
@@ -138,11 +160,10 @@ TEST_F(libTimeTests, TestSingleyearDownsample)
 }
 
 // Test diurnal to flat
-TEST_F(libTimeTests, TestDiurnalToFlat)
+TEST_F(libTimeTest_lib_time, flatten_diurnal_Schedule)
 {
 	std::vector<double> flat = flatten_diurnal(schedule, schedule, 1, sched_values, multiplier);
 	std::vector<double> flat30min = flatten_diurnal(schedule, schedule, 2, sched_values, multiplier);
-
 
 	EXPECT_EQ(flat.size(), util::hours_per_year);
 	EXPECT_EQ(flat30min.size(), util::hours_per_year * 2);
@@ -166,5 +187,20 @@ TEST_F(libTimeTests, TestDiurnalToFlat)
 			i++;
 		}
 	}
+}
 
+// Test diurnal to flat
+TEST_F(libTimeTest_lib_time, flatten_diurnal_ScheduleTOD)
+{
+    std::vector<double> flat = flatten_diurnal(schedule, schedule, 1, sched_values, multiplier);
+
+    EXPECT_EQ(flat.size(), util::hours_per_year);
+    for (size_t h = 0; h < flat.size(); h++) {
+        if (h % 24 > 11 && h % 24 < 19) {
+            EXPECT_NEAR(flat[h], 0.6, 0.0001);
+        }
+        else {
+            EXPECT_NEAR(flat[h], 0.2, 0.0001);
+        }
+    }
 }

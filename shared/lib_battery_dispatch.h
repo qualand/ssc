@@ -47,8 +47,8 @@ class dispatch_t
 {
 public:
 
-	enum FOM_MODES { FOM_LOOK_AHEAD, FOM_LOOK_BEHIND, FOM_FORECAST, FOM_CUSTOM_DISPATCH, FOM_MANUAL };
-	enum BTM_MODES { LOOK_AHEAD, LOOK_BEHIND, MAINTAIN_TARGET, CUSTOM_DISPATCH, MANUAL };
+	enum FOM_MODES { FOM_LOOK_AHEAD, FOM_LOOK_BEHIND, FOM_FORECAST, FOM_CUSTOM_DISPATCH, FOM_MANUAL, FOM_RESILIENCE };
+	enum BTM_MODES { LOOK_AHEAD, LOOK_BEHIND, MAINTAIN_TARGET, CUSTOM_DISPATCH, MANUAL, RESILIENCE };
 	enum METERING { BEHIND, FRONT };
 	enum PV_PRIORITY { MEET_LOAD, CHARGE_BATTERY };
 	enum CURRENT_CHOICE { RESTRICT_POWER, RESTRICT_CURRENT, RESTRICT_BOTH };
@@ -62,8 +62,10 @@ public:
 		int current_choice,
 		double Ic_max,
 		double Id_max,
-		double Pc_max,
-		double Pd_max,
+		double Pc_max_kwdc,
+		double Pd_max_kwdc,
+		double Pc_max_kwac,
+		double Pd_max_kwac,
 		double t_min,
 		int dispatch_mode,
 		int meter_position);
@@ -115,6 +117,9 @@ public:
 	// control settings
 	double battery_power_to_fill();
 
+	// test data
+	double battery_soc();
+
 	message get_messages();
 
 	/// Return a pointer to the underlying calculated power quantities
@@ -138,7 +143,7 @@ protected:
 	// Controllers
 	virtual	void SOC_controller();
 	void switch_controller();
-	double current_controller(double battery_voltage);
+	double current_controller(double power_kw);
 	bool restrict_current(double &I);
 	bool restrict_power(double &I);
 
@@ -189,8 +194,10 @@ public:
 		int current_choice,
 		double Ic_max,
 		double Id_max,
-		double Pc_max,
-		double Pd_max,
+		double Pc_max_kwdc,
+		double Pd_max_kwdc,
+		double Pc_max_kwac,
+		double Pd_max_kwac,
 		double t_min,
 		int mode,
 		int meterPosition,
@@ -207,14 +214,14 @@ public:
 	dispatch_manual_t(const dispatch_t& dispatch);
 
 	// copy members from dispatch to this
-	virtual void copy(const dispatch_t * dispatch);
+	void copy(const dispatch_t * dispatch) override;
 
 	virtual ~dispatch_manual_t(){};
 
 	/// Public API to run the battery dispatch model for the current timestep, given the system power, and optionally the electric load, amount of system clipping, or specified battery power
 	virtual void dispatch(size_t year,
 		size_t hour_of_year,
-		size_t step);
+		size_t step) override;
 
 protected:
 
@@ -237,8 +244,8 @@ protected:
 		std::map<size_t, double> dm_percent_discharge,
 		std::map<size_t, double> dm_percent_gridcharge);
 
-	void SOC_controller();
-	bool check_constraints(double &I, size_t count);
+	void SOC_controller() override;
+	bool check_constraints(double &I, size_t count) override;
 
 	util::matrix_t < size_t > _sched;
 	util::matrix_t < size_t > _sched_weekend;
@@ -251,8 +258,9 @@ protected:
 	double _percent_discharge;
 	double _percent_charge;
 
-	std::map<size_t, double>  _percent_discharge_array;
+	std::map<size_t, double> _percent_discharge_array;
 	std::map<size_t, double> _percent_charge_array;
+
 };
 
 /*! Class containing calculated grid power at a single time step */
@@ -302,8 +310,10 @@ public:
 		int current_choice,
 		double Ic_max,
 		double Id_max,
-		double Pc_max,
-		double Pd_max,
+		double Pc_max_kwdc,
+		double Pd_max_kwdc,
+		double Pc_max_kwac,
+		double Pd_max_kwac,
 		double t_min,
 		int dispatch_mode,
 		int pv_dispatch,
@@ -370,12 +380,6 @@ protected:
 	/*! The index of year the dispatch was last updated */
 	size_t _hour_last_updated;
 
-	/*! The index of year the dispatch was last updated */
-	size_t _index_last_updated;
-
-	/*! The amount of indices to wait before updating */
-	size_t _d_index_update;
-
 	/*! The timestep in hours (hourly = 1, half_hourly = 0.5, etc) */
 	double _dt_hour;
 
@@ -417,8 +421,10 @@ public:
 		int current_choice,
 		double Ic_max,
 		double Id_max,
-		double Pc_max,
-		double Pd_max,
+		double Pc_max_kwdc,
+		double Pd_max_kwdc,
+		double Pc_max_kwac,
+		double Pd_max_kwac,
 		double t_min,
 		int dispatch_mode,
 		int pv_dispatch,
@@ -431,7 +437,7 @@ public:
 		bool can_fuelcell_charge
 		);
 
-	virtual ~dispatch_automatic_behind_the_meter_t(){};
+	~dispatch_automatic_behind_the_meter_t() override {};
 
 	// deep copy constructor (new memory), from dispatch to this
 	dispatch_automatic_behind_the_meter_t(const dispatch_t& dispatch);
@@ -491,6 +497,7 @@ protected:
 
 	/* Vector of length (24 hours * steps_per_hour) containing sorted grid calculation [P_grid, hour, step] */
 	grid_vec sorted_grid;
+
 };
 
 /*! Automated Front of Meter DC-connected battery dispatch */
@@ -513,8 +520,10 @@ public:
 		int current_choice,
 		double Ic_max,
 		double Id_max,
-		double Pc_max,
-		double Pd_max,
+		double Pc_max_kwdc,
+		double Pd_max_kwdc,
+		double Pc_max_kwac,
+		double Pd_max_kwac,
 		double t_min,
 		int dispatch_mode,
 		int pv_dispatch,
@@ -552,8 +561,11 @@ public:
 	/// Compute the updated power to send to the battery over the next N hours
 	void update_dispatch(size_t hour_of_year, size_t step, size_t lifetimeIndex);
 
-	/// Update cliploss data
+	/// Update cliploss data [kW]
 	void update_cliploss_data(double_vec P_cliploss);
+
+	/// Pass in the PV power forecast [kW]
+	virtual void update_pv_data(std::vector<double> P_pv_dc);
 
 	/*! Calculate the cost to cycle */
 	void costToCycle();
@@ -561,22 +573,29 @@ public:
 	/*! Return the calculated cost to cycle ($/cycle)*/
 	double cost_to_cycle() { return m_cycleCost; }
 
+	/// Return benefit calculations
+	double benefit_charge(){ return revenueToPVCharge; }
+	double benefit_gridcharge() { return revenueToGridCharge; }
+	double benefit_clipcharge() { return revenueToClipCharge; }
+	double benefit_discharge() { return revenueToDischarge; }
+
+
 protected:
 	
 	void init_with_pointer(const dispatch_automatic_front_of_meter_t* tmp);
 	void setup_cost_forecast_vector();
 
-	/*! Full clipping loss due to AC power limits vector */
+	/*! Full clipping loss due to AC power limits vector [kW] */
 	double_vec _P_cliploss_dc;
 
 	/*! Inverter AC power limit */
 	double _inverter_paco;
 
 	/*! Market real time and forecast prices */
-	std::vector<double> _ppa_price_rt_series;
+	std::vector<double> _forecast_price_rt_series;
 
 	/*! Utility rate information */
-	std::unique_ptr<UtilityRateCalculator> m_utilityRateCalculator;
+	std::shared_ptr<UtilityRateCalculator> m_utilityRateCalculator;
 
 	/*! Cost to replace battery per kWh */
 	double m_battReplacementCostPerKWH;
@@ -589,6 +608,12 @@ protected:
 	double m_etaPVCharge;
 	double m_etaGridCharge;
 	double m_etaDischarge;
+
+	/* Computed benefits to charge, discharge, gridcharge, clipcharge */
+	double revenueToPVCharge;
+	double revenueToGridCharge;
+	double revenueToClipCharge;
+	double revenueToDischarge;
 };
 
 /*! Battery metrics class */

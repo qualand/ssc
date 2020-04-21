@@ -494,7 +494,11 @@ void C_csp_solver::init()
 	m_cycle_P_hot_des = pc_solved_params.m_P_hot_des;					//[kPa]
 	m_cycle_x_hot_des = pc_solved_params.m_x_hot_des;					//[-]
 		// TES
-	mc_tes.init();
+    C_csp_tes::S_csp_tes_init_inputs tes_init_inputs;
+    tes_init_inputs.T_to_cr_at_des = cr_solved_params.m_T_htf_cold_des;
+    tes_init_inputs.T_from_cr_at_des = cr_solved_params.m_T_htf_hot_des;
+    tes_init_inputs.P_to_cr_at_des = cr_solved_params.m_dP_sf;
+	mc_tes.init(tes_init_inputs);
 		// TOU
     mc_tou.mc_dispatch_params.m_isleapyear = mc_weather.ms_solved_params.m_leapyear;
 	mc_tou.init();
@@ -550,6 +554,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 
 	double wf_step = 3600.0 / step_per_hour;	//[s] Weather file time step - would like to check this against weather file, some day
 	
+    m_is_first_timestep = true;
 	double step_tolerance = 10.0;		//[s] For adjustable timesteps, if within 10 seconds, assume it equals baseline timestep
 	double baseline_step = wf_step;		//[s] Baseline timestep of the simulation - this should probably be technology/model specific
 	// Check the collector-receiver model for a maximum step
@@ -600,6 +605,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 		dispatch.params.rsu_cost = mc_tou.mc_dispatch_params.m_rsu_cost;
 		dispatch.params.csu_cost = mc_tou.mc_dispatch_params.m_csu_cost;
 		dispatch.params.pen_delta_w = mc_tou.mc_dispatch_params.m_pen_delta_w;
+        dispatch.params.disp_inventory_incentive = mc_tou.mc_dispatch_params.m_disp_inventory_incentive;
 		dispatch.params.q_rec_standby = mc_tou.mc_dispatch_params.m_q_rec_standby;
 		
 		dispatch.params.w_rec_ht = mc_tou.mc_dispatch_params.m_w_rec_ht;
@@ -613,7 +619,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 		//add zero point
 		dispatch.params.eff_table_load.add_point(0., 0.);    //this is required to allow the model to converge
 
-		int neff = 2;
+		int neff = 2;   //mjw: if using something other than 2, the linear approximation assumption and associated code in csp_dispatch.cpp/calculate_parameters() needs to be reformulated.
 		for(int i=0; i<neff; i++)
 		{
 			double x = dispatch.params.q_pb_min + (dispatch.params.q_pb_max - dispatch.params.q_pb_min)/(double)(neff - 1)*i;
@@ -750,6 +756,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			throw(C_csp_exception(msg,"CSP Solver Core"));
 		}
 		pc_operating_state = mc_power_cycle.get_operating_state();
+        if (m_is_first_timestep && f_turbine_tou <= 0.) pc_operating_state = C_csp_power_cycle::OFF;
 
 		// Calculate maximum thermal power to power cycle for startup. This will be zero if power cycle is on.
 		double q_dot_pc_su_max = mc_power_cycle.get_max_q_pc_startup();		//[MWt]
@@ -775,6 +782,11 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 		double q_pc_target = q_pc_max;							//[MW]
 
 		q_pc_target = f_turbine_tou * m_cycle_q_dot_des;	//[MW]
+
+        if (mc_tou.mc_dispatch_params.m_is_tod_pc_target_also_pc_max)
+        {
+            q_pc_max = q_pc_target;     //[MW]
+        }
 
 
 		double m_dot_htf_ND_max = std::numeric_limits<double>::quiet_NaN();
@@ -881,7 +893,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 
 
 		// After rules, reset booleans if necessary
-		if( q_pc_target < q_pc_min )
+		if( q_pc_target < q_pc_min || q_pc_target <= 0. )
 		{
 			is_pc_su_allowed = false;
 			is_pc_sb_allowed = false;
@@ -2339,6 +2351,13 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 					// Reset sim_info values
 					mc_kernel.mc_sim_info.ms_ts.m_step = mc_pc_out_solver.m_time_required_su;						//[s]
 					mc_kernel.mc_sim_info.ms_ts.m_time = mc_kernel.mc_sim_info.ms_ts.m_time_start + mc_pc_out_solver.m_time_required_su;		//[s]
+
+					// Call collector/receiver model again with new time step
+					mc_collector_receiver.on(mc_weather.ms_outputs,
+						mc_cr_htf_state_in,
+						m_defocus,
+						mc_cr_out_solver,
+						mc_kernel.mc_sim_info);
 				}
 
 				if( m_is_tes )
@@ -4825,10 +4844,26 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			(ms_system_params.m_bop_par_0 + ms_system_params.m_bop_par_1*W_dot_ratio + ms_system_params.m_bop_par_2*pow(W_dot_ratio,2));
 			// [MWe]
 
+        double W_dot_tes_pump;
+        if (m_is_tes) {
+            W_dot_tes_pump = mc_tes.pumping_power(mc_cr_out_solver.m_m_dot_salt_tot / 3600., mc_pc_out_solver.m_m_dot_htf / 3600., mc_tes_outputs.m_m_dot,
+                mc_cr_htf_state_in.m_temp + 273.15, mc_cr_out_solver.m_T_salt_hot + 273.15,
+                mc_pc_htf_state_in.m_temp + 273.15, mc_pc_out_solver.m_T_htf_cold + 273.15,
+                mc_cr_out_solver.m_is_recirculating);
+        }
+        else {
+            W_dot_tes_pump = 0.;
+        }
+        if (W_dot_tes_pump < 0 || W_dot_tes_pump != W_dot_tes_pump){
+            error_msg = "TES pumping power failed";
+            throw(C_csp_exception(error_msg, "System-level parasitics"));
+        }
+
 		double W_dot_net = mc_pc_out_solver.m_P_cycle - 
 			mc_cr_out_solver.m_W_dot_col_tracking -
 			mc_cr_out_solver.m_W_dot_htf_pump - 
-			(mc_pc_out_solver.m_W_dot_htf_pump + mc_tes_outputs.m_W_dot_rhtf_pump) -
+			(mc_pc_out_solver.m_W_dot_htf_pump + W_dot_tes_pump) -
+			mc_cr_out_solver.m_q_rec_heattrace -
 			mc_pc_out_solver.m_W_cool_par -
 			mc_tes_outputs.m_q_heater - 
 			W_dot_fixed -
@@ -4942,7 +4977,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			// Parasitics outputs
 		mc_reported_outputs.value(C_solver_outputs::COL_W_DOT_TRACK, mc_cr_out_solver.m_W_dot_col_tracking);    //[MWe] Collector tracking, startup, stow power consumption 
 		mc_reported_outputs.value(C_solver_outputs::CR_W_DOT_PUMP, mc_cr_out_solver.m_W_dot_htf_pump);          //[MWe] Receiver/tower HTF pumping power   
-		mc_reported_outputs.value(C_solver_outputs::SYS_W_DOT_PUMP, (mc_pc_out_solver.m_W_dot_htf_pump + mc_tes_outputs.m_W_dot_rhtf_pump));    //[MWe] TES & PC HTF pumping power (Receiver - PC side HTF)  
+		mc_reported_outputs.value(C_solver_outputs::SYS_W_DOT_PUMP, (mc_pc_out_solver.m_W_dot_htf_pump + W_dot_tes_pump ));    //[MWe] TES & PC HTF pumping power (Receiver - PC side HTF)  
 		mc_reported_outputs.value(C_solver_outputs::PC_W_DOT_COOLING, mc_pc_out_solver.m_W_cool_par);           //[MWe] Power cycle cooling power consumption (fan, pumps, etc.)
 		mc_reported_outputs.value(C_solver_outputs::SYS_W_DOT_FIXED, W_dot_fixed);								//[MWe] Fixed electric parasitic power load 
 		mc_reported_outputs.value(C_solver_outputs::SYS_W_DOT_BOP, W_dot_bop);									//[MWe] Balance-of-plant electric parasitic power load   
@@ -5119,6 +5154,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			throw(C_csp_exception("Kernel end time is larger than the baseline end time. This shouldn't happen"));
 		}
 		
+        m_is_first_timestep = false;
 	}	// End timestep loop
 
 }	// End simulate() method
