@@ -326,27 +326,27 @@ void mp_ancillary_services(ssc_data_t data)
 						{
 							if (energy_market_capacity[i] < 0)
 							{
-								error = util::format("energy market cleared capacity %g is less than zerod at timestep %d", energy_market_capacity[i], int(i));
+								error = util::format("energy market cleared capacity %g is less than zero at timestep %d", energy_market_capacity[i], int(i));
 								break;
 							}
 							else if (ancillary_services1_capacity[i] < 0)
 							{
-								error = util::format("ancillary services 1 market cleared capacity %g is less than zerod at timestep %d", ancillary_services1_capacity[i], int(i));
+								error = util::format("ancillary services 1 market cleared capacity %g is less than zero at timestep %d", ancillary_services1_capacity[i], int(i));
 								break;
 							}
 							else if (ancillary_services2_capacity[i] < 0)
 							{
-								error = util::format("ancillary services 2 market cleared capacity %g is less than zerod at timestep %d", ancillary_services2_capacity[i], int(i));
+								error = util::format("ancillary services 2 market cleared capacity %g is less than zero at timestep %d", ancillary_services2_capacity[i], int(i));
 								break;
 							}
 							else if (ancillary_services3_capacity[i] < 0)
 							{
-								error = util::format("ancillary services 3 market cleared capacity %g is less than zerod at timestep %d", ancillary_services3_capacity[i], int(i));
+								error = util::format("ancillary services 3 market cleared capacity %g is less than zero at timestep %d", ancillary_services3_capacity[i], int(i));
 								break;
 							}
 							else if (ancillary_services4_capacity[i] < 0)
 							{
-								error = util::format("ancillary services 4 market cleared capacity %g is less than zerod at timestep %d", ancillary_services4_capacity[i], int(i));
+								error = util::format("ancillary services 4 market cleared capacity %g is less than zero at timestep %d", ancillary_services4_capacity[i], int(i));
 								break;
 							}
 							else if ((cleared_capacity_sum[i] > 0) && (cleared_capacity_sum[i] > system_generation[i]))
