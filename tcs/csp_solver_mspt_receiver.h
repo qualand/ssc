@@ -382,6 +382,11 @@ public:
 	// Flow control
 	double m_csky_frac;
 
+    bool m_is_user_mflow;
+    bool m_is_user_Tin;
+    std::vector<double> m_user_mflow;
+    std::vector<double> m_user_Tin;
+
 	S_outputs outputs;
 
 	// Methods

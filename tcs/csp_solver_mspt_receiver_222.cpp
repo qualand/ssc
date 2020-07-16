@@ -101,6 +101,9 @@ C_mspt_receiver_222::C_mspt_receiver_222()
 
 	m_mode_initial = -1;
 	m_E_su_accum_init = 0.0;
+
+    m_is_user_mflow = false;
+    m_is_user_Tin = false;
 }
 
 void C_mspt_receiver_222::init()
@@ -408,6 +411,24 @@ void C_mspt_receiver_222::call(const C_csp_weatherreader::S_outputs &weather,
 		m_od_control = fmin(m_od_control + (1.0 - field_eff / m_eta_field_iter_prev), 1.0);
 	}
 
+    // Get mass flow and inlet temperature at this time step
+    double mflow = 0.0;
+    if (m_is_user_mflow)
+    {
+        size_t nsteps = m_user_mflow.size();
+        int stepsize = 8760 * 3600 / nsteps;   // File time step size [s]
+        int step = (int)(time / stepsize)-1;
+        mflow = m_user_mflow.at(step);
+    }
+    if (m_is_user_Tin)
+    {
+        size_t nsteps = m_user_Tin.size();
+        int stepsize = 8760 * 3600 / nsteps;   // File time step size [s]
+        int step = (int)(time / stepsize)-1;
+        T_salt_cold_in = m_user_Tin.at(step)+273.15;
+    }
+
+
 	
 	// Initialize steady state solutions with current weather, DNI, field efficiency, and inlet conditions
 	s_steady_state_soln soln, soln_actual, soln_clearsky;
@@ -431,7 +452,12 @@ void C_mspt_receiver_222::call(const C_csp_weatherreader::S_outputs &weather,
 	
 	if (rec_is_off)
 		soln.q_dot_inc.resize_fill(m_n_panels, 0.0);
-
+    else if (m_is_user_mflow)
+    {
+        soln.m_dot_salt = mflow / m_n_lines;
+        soln.q_dot_inc = calculate_flux_profiles(I_bn, field_eff, soln.od_control, flux_map_input);  // Absorbed flux profiles at actual DNI and clear-sky defocus
+        calculate_steady_state_soln(soln, 0.00025);  // Solve energy balances at clearsky mass flow rate and actual DNI conditions
+    }
 	else
 	{
 
