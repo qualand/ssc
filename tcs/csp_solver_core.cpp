@@ -1639,7 +1639,8 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			else if( cr_operating_state == C_csp_collector_receiver::ON &&
 				(pc_operating_state == C_csp_power_cycle::OFF || pc_operating_state == C_csp_power_cycle::STARTUP) )
 			{
-				if( q_dot_cr_on > 0.0 && is_rec_su_allowed )
+				//if( q_dot_cr_on > 0.0 && is_rec_su_allowed )
+                if (is_rec_su_allowed)
 				{	// Receiver is allowed to remain on, and it can produce useful energy. Now, need to find a home for it
 
 					if( is_pc_su_allowed &&
@@ -1822,7 +1823,8 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			else if( cr_operating_state == C_csp_collector_receiver::ON &&
 				(pc_operating_state == C_csp_power_cycle::ON || pc_operating_state == C_csp_power_cycle::STANDBY) )
 			{
-				if( q_dot_cr_on > 0.0 && is_rec_su_allowed )
+				//if( q_dot_cr_on > 0.0 && is_rec_su_allowed )
+                if (is_rec_su_allowed)
 				{	// Receiver operation is allowed and possible - find a home for output
 
 					if( is_pc_su_allowed || is_pc_sb_allowed )

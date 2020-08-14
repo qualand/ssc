@@ -204,6 +204,11 @@ void C_csp_mspt_collector_receiver::call(const C_csp_weatherreader::S_outputs &w
 	mc_reported_outputs.value(E_CLEARSKY, mc_pt_receiver.ms_outputs.m_clearsky);
 	mc_reported_outputs.value(E_Q_DOT_THERMAL_CSKY_SS, mc_pt_receiver.ms_outputs.m_Q_thermal_csky_ss); //[MWt]
 	mc_reported_outputs.value(E_Q_DOT_THERMAL_SS, mc_pt_receiver.ms_outputs.m_Q_thermal_ss); //[MWt]
+
+
+    // After reporting, force outlet T higher than design inlet T to trick the controller into allowing receiver operation during "standby"
+    if (cr_out_solver.m_T_salt_hot < mc_pt_receiver.m_T_htf_cold_des - 273.15)
+        cr_out_solver.m_T_salt_hot = mc_pt_receiver.m_T_htf_cold_des - 273.15 + 1;
 }
 
 void C_csp_mspt_collector_receiver::off(const C_csp_weatherreader::S_outputs &weather,
