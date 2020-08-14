@@ -58,6 +58,22 @@ static C_csp_reported_outputs::S_output_info S_output_info[] =
     { C_csp_mspt_collector_receiver::E_REC_OP_MODE_FINAL, C_csp_reported_outputs::TS_LAST},
     { C_csp_mspt_collector_receiver::E_REC_STARTUP_TIME_REMAIN_FINAL, C_csp_reported_outputs::TS_LAST },
     { C_csp_mspt_collector_receiver::E_REC_STARTUP_ENERGY_REMAIN_FINAL, C_csp_reported_outputs::TS_LAST },
+
+    {C_csp_mspt_collector_receiver::E_T_HTF_0, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_1, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_2, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_3, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_4, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_5, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_6, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_7, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_8, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_9, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_10, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_11, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_12, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+    {C_csp_mspt_collector_receiver::E_T_HTF_13, C_csp_reported_outputs::TS_WEIGHTED_AVE},
+
 	csp_info_invalid	
 };
 
@@ -205,6 +221,21 @@ void C_csp_mspt_collector_receiver::call(const C_csp_weatherreader::S_outputs &w
 	mc_reported_outputs.value(E_Q_DOT_THERMAL_CSKY_SS, mc_pt_receiver.ms_outputs.m_Q_thermal_csky_ss); //[MWt]
 	mc_reported_outputs.value(E_Q_DOT_THERMAL_SS, mc_pt_receiver.ms_outputs.m_Q_thermal_ss); //[MWt]
 
+    mc_reported_outputs.value(E_T_HTF_0, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(0)); //[C]
+    mc_reported_outputs.value(E_T_HTF_1, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(1)); //[C]
+    mc_reported_outputs.value(E_T_HTF_2, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(2)); //[C]
+    mc_reported_outputs.value(E_T_HTF_3, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(3)); //[C]
+    mc_reported_outputs.value(E_T_HTF_4, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(4)); //[C]
+    mc_reported_outputs.value(E_T_HTF_5, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(5)); //[C]
+    mc_reported_outputs.value(E_T_HTF_6, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(6)); //[C]
+    mc_reported_outputs.value(E_T_HTF_7, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(7)); //[C]
+    mc_reported_outputs.value(E_T_HTF_8, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(8)); //[C]
+    mc_reported_outputs.value(E_T_HTF_9, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(9)); //[C]
+    mc_reported_outputs.value(E_T_HTF_10, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(10)); //[C]
+    mc_reported_outputs.value(E_T_HTF_11, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(11)); //[C]
+    mc_reported_outputs.value(E_T_HTF_12, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(12)); //[C]
+    mc_reported_outputs.value(E_T_HTF_13, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(13)); //[C]
+
 
     // After reporting, force outlet T higher than design inlet T to trick the controller into allowing receiver operation during "standby"
     if (cr_out_solver.m_T_salt_hot < mc_pt_receiver.m_T_htf_cold_des - 273.15)
@@ -275,6 +306,21 @@ void C_csp_mspt_collector_receiver::off(const C_csp_weatherreader::S_outputs &we
 	mc_reported_outputs.value(E_CLEARSKY, mc_pt_receiver.ms_outputs.m_clearsky);
 	mc_reported_outputs.value(E_Q_DOT_THERMAL_CSKY_SS, mc_pt_receiver.ms_outputs.m_Q_thermal_csky_ss); //[MWt]
 	mc_reported_outputs.value(E_Q_DOT_THERMAL_SS, mc_pt_receiver.ms_outputs.m_Q_thermal_ss); //[MWt]
+
+    mc_reported_outputs.value(E_T_HTF_0, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(0)); //[C]
+    mc_reported_outputs.value(E_T_HTF_1, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(1)); //[C]
+    mc_reported_outputs.value(E_T_HTF_2, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(2)); //[C]
+    mc_reported_outputs.value(E_T_HTF_3, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(3)); //[C]
+    mc_reported_outputs.value(E_T_HTF_4, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(4)); //[C]
+    mc_reported_outputs.value(E_T_HTF_5, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(5)); //[C]
+    mc_reported_outputs.value(E_T_HTF_6, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(6)); //[C]
+    mc_reported_outputs.value(E_T_HTF_7, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(7)); //[C]
+    mc_reported_outputs.value(E_T_HTF_8, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(8)); //[C]
+    mc_reported_outputs.value(E_T_HTF_9, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(9)); //[C]
+    mc_reported_outputs.value(E_T_HTF_10, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(10)); //[C]
+    mc_reported_outputs.value(E_T_HTF_11, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(11)); //[C]
+    mc_reported_outputs.value(E_T_HTF_12, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(12)); //[C]
+    mc_reported_outputs.value(E_T_HTF_13, mc_pt_receiver.ms_outputs.m_T_panel_avg.at(13)); //[C]
 
 	return;
 }

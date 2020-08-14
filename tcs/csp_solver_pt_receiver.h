@@ -131,7 +131,9 @@ public:
 
 		double m_clearsky;				//[W/m2] Clear-sky DNI used in receiver flow control 
 		double m_Q_thermal_csky_ss;		//[MWt]  Steady-state thermal power delivered to TES/PC if DNI is equal to clear-sky DNI 
-		double m_Q_thermal_ss;			//[MWt] Steady-state thermal power delivered to TES/PC 
+		double m_Q_thermal_ss;			//[MWt] Steady-state thermal power delivered to TES/PC
+
+        std::vector<double> m_T_panel_avg; //[C] Average fluid temperature per receiver panel 
 
         S_outputs()
         {

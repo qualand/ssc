@@ -69,7 +69,22 @@ public:
 		E_Q_DOT_THERMAL_SS,		//[MWt] Thermal power from receiver under steady-state conditions
         E_REC_OP_MODE_FINAL,    //[-] Final receiver operating mode (see E_csp_cr_modes)
         E_REC_STARTUP_TIME_REMAIN_FINAL,    //[hr] Final receiver startup time remaining
-        E_REC_STARTUP_ENERGY_REMAIN_FINAL   //[W-hr] Final receiver startup energy remaining
+        E_REC_STARTUP_ENERGY_REMAIN_FINAL,   //[W-hr] Final receiver startup energy remaining
+
+        E_T_HTF_0,   // [C] Panel 0 HTF temperature
+        E_T_HTF_1,   // [C] Panel 1 HTF temperature
+        E_T_HTF_2,
+        E_T_HTF_3,
+        E_T_HTF_4,
+        E_T_HTF_5,
+        E_T_HTF_6,
+        E_T_HTF_7,
+        E_T_HTF_8,
+        E_T_HTF_9,
+        E_T_HTF_10,
+        E_T_HTF_11,
+        E_T_HTF_12,
+        E_T_HTF_13
 	};
 	
 	C_csp_reported_outputs mc_reported_outputs;

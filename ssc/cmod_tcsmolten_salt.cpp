@@ -561,6 +561,22 @@ static var_info _cm_vtab_tcsmolten_salt[] = {
 	{ SSC_OUTPUT,    SSC_ARRAY,  "Q_thermal_ss",					   "Receiver thermal power to HTF less piping loss (steady state)",																			  "MWt",          "",                                  "CR",                                       "*",                                                                "",              "" },
 	{ SSC_OUTPUT,    SSC_ARRAY,  "Q_thermal_ss_csky",				   "Receiver thermal power to HTF less piping loss under clear-sky conditions (steady state)",												  "MWt",          "",                                  "CR",                                       "*",                                                                "",              "" },
 
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_0",				       "Average HTF T in panel 0",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_1",				       "Average HTF T in panel 1",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_2",				       "Average HTF T in panel 2",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_3",				       "Average HTF T in panel 3",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_4",				       "Average HTF T in panel 4",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_5",				       "Average HTF T in panel 5",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_6",				       "Average HTF T in panel 6",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_7",				       "Average HTF T in panel 7",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_8",				       "Average HTF T in panel 8",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_9",				       "Average HTF T in panel 9",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_10",				       "Average HTF T in panel 10",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_11",				       "Average HTF T in panel 11",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_12",				       "Average HTF T in panel 12",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+    { SSC_OUTPUT,    SSC_ARRAY,  "T_htf_panel_13",				       "Average HTF T in panel 13",												                                                                  "C",            "",                                  "CR",                                       "*",                                                                "",              "" },
+
+
 
         // Power cycle outputs
     { SSC_OUTPUT,    SSC_ARRAY,  "eta",                                "PC efficiency, gross",                                                                                                                    "",             "",                                  "",                                         "*",                                                                "",              ""},
@@ -2035,6 +2051,21 @@ public:
 		collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_CLEARSKY, allocate("clearsky", n_steps_fixed), n_steps_fixed);
 		collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_Q_DOT_THERMAL_CSKY_SS, allocate("Q_thermal_ss_csky", n_steps_fixed), n_steps_fixed);
 		collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_Q_DOT_THERMAL_SS, allocate("Q_thermal_ss", n_steps_fixed), n_steps_fixed);
+
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_0, allocate("T_htf_panel_0", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_1, allocate("T_htf_panel_1", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_2, allocate("T_htf_panel_2", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_3, allocate("T_htf_panel_3", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_4, allocate("T_htf_panel_4", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_5, allocate("T_htf_panel_5", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_6, allocate("T_htf_panel_6", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_7, allocate("T_htf_panel_7", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_8, allocate("T_htf_panel_8", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_9, allocate("T_htf_panel_9", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_10, allocate("T_htf_panel_10", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_11, allocate("T_htf_panel_11", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_12, allocate("T_htf_panel_12", n_steps_fixed), n_steps_fixed);
+        collector_receiver.mc_reported_outputs.assign(C_csp_mspt_collector_receiver::E_T_HTF_13, allocate("T_htf_panel_13", n_steps_fixed), n_steps_fixed);
 
         // Thermal energy storage 
         C_csp_two_tank_tes storage;

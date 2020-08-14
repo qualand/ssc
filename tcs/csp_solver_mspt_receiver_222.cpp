@@ -297,6 +297,9 @@ void C_mspt_receiver_222::init()
 	m_Rtot_riser = 0.0;
 	m_Rtot_downc = 0.0;
 
+    int n = std::fmax(14, m_n_panels);
+    outputs.m_T_panel_avg.resize(n);
+
 	return;
 }
 
@@ -764,6 +767,9 @@ void C_mspt_receiver_222::call(const C_csp_weatherreader::S_outputs &weather,
 
 		// Reset m_od_control
 		m_od_control = 1.0;		//[-]
+
+        m_T_panel_ave.resize_fill(m_n_panels, m_T_htf_cold_des);
+
 	}
 
 	outputs.m_m_dot_salt_tot = m_dot_salt_tot*3600.0;		//[kg/hr] convert from kg/s
@@ -795,6 +801,9 @@ void C_mspt_receiver_222::call(const C_csp_weatherreader::S_outputs &weather,
 	outputs.m_clearsky = clearsky;  // W/m2
 	outputs.m_Q_thermal_csky_ss = q_thermal_csky / 1.e6; //[MWt]
 	outputs.m_Q_thermal_ss = q_thermal_steadystate / 1.e6; //[MWt]
+
+    for (int j = 0; j < m_n_panels; j++)
+        outputs.m_T_panel_avg.at(j) = m_T_panel_ave.at(j) - 273.15;
 
     ms_outputs = outputs;
 
@@ -835,6 +844,9 @@ void C_mspt_receiver_222::off(const C_csp_weatherreader::S_outputs &weather,
 	outputs.m_clearsky = get_clearsky(weather, sim_info.ms_ts.m_time / 3600.);  // clear-sky DNI (set to actual DNI if actual DNI is higher than computed clear-sky value)
 	outputs.m_Q_thermal_csky_ss = 0.0; //[MWt]
 	outputs.m_Q_thermal_ss = 0.0; //[MWt]
+
+    for (int j = 0; j < m_n_panels; j++)
+        outputs.m_T_panel_avg.at(j) = 0.0;
 
     ms_outputs = outputs;
 	

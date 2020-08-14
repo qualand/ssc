@@ -300,6 +300,8 @@ private:
 	void solve_transient_startup_model(parameter_eval_inputs &pinputs, transient_inputs &tinputs, int startup_mode, double target_temperature, double min_time, double max_time, transient_outputs &toutputs, double &startup_time, double &energy, double &parasitic);
 	void set_heattrace_power(bool is_maintain_T, double Ttarget, double time, parameter_eval_inputs &pinputs, transient_inputs &tinputs);
 
+    std::vector<double> get_temperature_at_panel_midpoints(const transient_inputs& tinputs, const transient_outputs& toutputs);
+
 	enum startup_modes
 	{
 		HEAT_TRACE = 0,		// No flux on receiver, riser/downcomer heated with heat tracing

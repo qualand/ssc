@@ -367,6 +367,9 @@ void C_mspt_receiver::init()
 	m_Rtot_riser = 0.0;
 	m_Rtot_downc = 0.0;
 
+    int n = std::fmax(14, m_n_panels);
+    outputs.m_T_panel_avg.resize(n);
+
 	initialize_transient_parameters();
 	
 	return;
@@ -1450,6 +1453,8 @@ void C_mspt_receiver::call(const C_csp_weatherreader::S_outputs &weather,
 		// Reset m_od_control
 		m_od_control = 1.0;		//[-]
 
+        m_T_panel_ave.resize_fill(m_n_panels, m_T_htf_cold_des);
+
 		if (m_is_transient || m_is_startup_transient)
 		{
 			trans_outputs.timeavg_conv_loss = 0.0; trans_outputs.timeavg_rad_loss = 0.0; trans_outputs.timeavg_piping_loss = 0.0; trans_outputs.timeavg_qthermal = 0.0;
@@ -1500,6 +1505,10 @@ void C_mspt_receiver::call(const C_csp_weatherreader::S_outputs &weather,
 	outputs.m_Triser = 0.0;
 	outputs.m_Tdownc = 0.0;
 
+
+    for (int j = 0; j < m_n_panels; j++)
+        outputs.m_T_panel_avg.at(j) = m_T_panel_ave.at(j) - 273.15;
+
 	// Transient model outputs
 	if ((m_is_transient && input_operation_mode == C_csp_collector_receiver::ON) || (m_is_startup_transient && input_operation_mode == C_csp_collector_receiver::STARTUP))		// Transient model is solved
 	{
@@ -1525,6 +1534,12 @@ void C_mspt_receiver::call(const C_csp_weatherreader::S_outputs &weather,
 		outputs.m_Triser = trans_outputs.t_profile.at(0, 0) - 273.15;	//[C] Average riser wall temperature at inlet
 		outputs.m_Tdownc = trans_outputs.t_profile.at((size_t)m_nz_tot-1, 0) - 273.15;  //[C] Average downcomer wall temperature at outlet
 
+        if (!rec_is_off)
+        {
+            std::vector<double> Tmid = get_temperature_at_panel_midpoints(trans_inputs, trans_outputs);  // [K] Temperatures at panel midpoints at the end of the timestep
+            for (int j = 0; j < m_n_panels; j++)
+                outputs.m_T_panel_avg.at(j) = Tmid.at(j) - 273.15;
+        }
 	}
 
 	outputs.m_clearsky = clearsky;  // W/m2
@@ -1577,6 +1592,9 @@ void C_mspt_receiver::off(const C_csp_weatherreader::S_outputs &weather,
 	outputs.m_Twall_outlet = 0.0;
 	outputs.m_Triser = 0.0;
 	outputs.m_Tdownc = 0.0;
+
+    for (int j = 0; j < m_n_panels; j++)
+        outputs.m_T_panel_avg.at(j) = 0.0;
 
 	m_startup_mode = -1;
 	
@@ -4258,4 +4276,37 @@ double C_mspt_receiver::get_startup_energy()
 		est_startup_time_energy(fract, startup_time, startup_energy);	
 	}
     return startup_energy;  // [MWh]
+}
+
+
+
+std::vector<double> C_mspt_receiver::get_temperature_at_panel_midpoints(const transient_inputs& tinputs, const transient_outputs& toutputs)
+{
+    std::vector<double> Tmdpt(m_n_panels, 0.0);
+
+    for (size_t i = 0; i < m_n_lines; i++)
+    {
+        for (size_t j = 0; j < m_n_elem; j++)			// Flow path elements in flow order
+        {
+            int id = m_flowelem_type.at(j, i);
+            if (id >= 0)  // Receiver panel
+            {
+                int s = tinputs.startpt.at(j);  // Index at first axial position of this flow element
+                int nz = tinputs.nz.at(j);      // Number of evaluation points
+                if (nz % 2 == 0)
+                {
+                    int p1 = nz / 2;
+                    int p2 = p1 - 1;
+                    Tmdpt.at(id) = 0.5 * (toutputs.t_profile(s + p1, i) + toutputs.t_profile(s + p2, i));
+                }
+                else
+                {
+                    int p = (nz + 1) / 2;
+                    Tmdpt.at(id) = toutputs.t_profile(s + p, i);
+                }
+
+            }
+        }
+    }
+    return Tmdpt;
 }
