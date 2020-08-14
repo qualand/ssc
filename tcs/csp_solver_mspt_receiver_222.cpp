@@ -1225,8 +1225,8 @@ void C_mspt_receiver_222::calculate_steady_state_soln(s_steady_state_soln &soln,
 
 	} // End iterations
 
-	if (soln.T_salt_hot < soln.T_salt_cold_in)
-		soln.mode = C_csp_collector_receiver::OFF;
+	//if (soln.T_salt_hot < soln.T_salt_cold_in)
+	//	soln.mode = C_csp_collector_receiver::OFF;
 
 
 	// Save overall energy loss
