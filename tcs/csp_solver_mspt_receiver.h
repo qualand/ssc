@@ -74,12 +74,6 @@ private:
 	double m_eta_field_iter_prev;	//[-] Efficiency from heliostat on last iteration. Maybe change if CR gets defocus signal from controller
 	double m_tol_od;
 
-	/* declare storage variables here */
-	double m_E_su;
-	double m_E_su_prev;
-	double m_t_su;
-	double m_t_su_prev;
-
 	util::matrix_t<int> m_flow_pattern;
 	int m_n_lines;
 
@@ -112,7 +106,7 @@ private:
 
 	struct s_steady_state_soln
 	{
-		int mode;					// Operating mode
+		C_csp_collector_receiver::E_csp_cr_modes mode;					// Operating mode
 		bool rec_is_off;
 		int itermode;
 
@@ -168,7 +162,8 @@ private:
 			hour = T_amb = T_dp = v_wind_10 = p_amb = std::numeric_limits<double>::quiet_NaN();
 			dni = od_control = field_eff = m_dot_salt = m_dot_salt_tot = T_salt_cold_in = T_salt_hot = T_salt_hot_rec = T_salt_props = std::numeric_limits<double>::quiet_NaN();
 			u_salt = f = Q_inc_sum = Q_conv_sum = Q_rad_sum = Q_abs_sum = Q_dot_piping_loss = Q_inc_min = Q_thermal = eta_therm = std::numeric_limits<double>::quiet_NaN();
-			mode = itermode = -1;
+            mode = C_csp_collector_receiver::E_csp_cr_modes::OFF;
+            itermode = -1;
 			rec_is_off = true;
 		}
 	};
@@ -329,7 +324,7 @@ public:
 	double m_hl_ffact;				//[-]
 	double m_A_sf;					//[m2]
 
-    int m_mode_initial;
+    C_csp_collector_receiver::E_csp_cr_modes m_mode_initial;
     double m_E_su_accum_init;    //Initial accumulated startup energy [MWht]
 
 	// 8.10.2015 twn: add tower piping thermal losses to receiver performance
@@ -365,6 +360,17 @@ public:
 
 	bool m_is_startup_from_solved_profile;  // Begin receiver startup from solved temperature profiles?
 	bool m_is_enforce_min_startup;		// Always enforce minimum startup time?  If false, minimum startup time is ignored when receiver starts above preheat temperature
+
+    double m_header_OD;          // Header OD (m)
+    double m_header_twall;       // Header wall thickness (m)
+    double m_header_len;         // Header length (m)
+    int m_header_mat;         // Header tube material
+    double m_cross_header_OD;    // Crossover header OD (m)
+    double m_cross_header_twall; // Crossover header wall thickness (m)
+    double m_cross_header_len;   // Crossover header length (m)
+    int m_cross_header_mat;   // Crossover header tube material
+    HTFProperties header_material;
+    HTFProperties cross_header_material;
 
 	// 4.17.15 twn: former TCS inputs, moved to member data because are constant throughout simulation
 	double m_T_salt_hot_target;			//[C], convert to K in init() call
