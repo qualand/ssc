@@ -192,7 +192,7 @@ static var_info _cm_vtab_tcsmolten_salt[] = {
 
     { SSC_INPUT,     SSC_ARRAY,  "header_sizing",                      "Header sizing [OD(mm), twall(mm), length(m), material]",                                                                                  "",             "",                                  "Tower and Receiver",                       "?",                                                                "",              "" },
     { SSC_INPUT,     SSC_ARRAY,  "cross_header_sizing",                "Crossover header sizing [OD(mm), twall(mm), length(m), material]",                                                                        "",             "",                                  "Tower and Receiver",                       "?",                                                                "",              "" },
-
+    { SSC_INPUT,     SSC_NUMBER, "T_report_location",                   "0 = center of tube, 1 = single-end (inlet), 2 = single-end (outlet)",                                                                                                     "",             "",                                  "Tower and Receiver",                       "?=0",                                                              "",              "" },
 
     // TES parameters - general
     { SSC_INPUT,     SSC_NUMBER, "csp.pt.tes.init_hot_htf_percent",    "Initial fraction of available volume that is hot",                                                                                        "%",            "",                                  "Thermal Storage",                          "*",                                                                "",              ""},
@@ -1824,7 +1824,6 @@ public:
                     ss_receiver->m_user_Tin.at(i) = (double)Tin[i];
             }
 
-
             receiver = std::move(ss_receiver);
         }
         else {
@@ -1921,30 +1920,7 @@ public:
                 {
                     log("Incomplete crossover header sizing provided. Required data is [OD (mm), wall thickness (mm), length (m)].  Reverting to default header sizing calculations and SS316 properties", SSC_WARNING);
                 }
-            }            trans_receiver->m_is_user_mflow = as_boolean("is_rec_user_mflow");
-            if (trans_receiver->m_is_user_mflow)
-            {
-                size_t n_mflow = 0;
-                ssc_number_t* mflow = as_array("rec_user_mflow", &n_mflow);
-                if (n_mflow != n_steps_full)
-                    throw exec_error("tcsmolten_salt", "Invalid user-defined mass flow control signal. Array must have " + util::to_string((int)n_steps_full) + " rows.");
-                trans_receiver->m_user_mflow.resize(n_steps_full);
-                for (size_t i = 0; i < n_steps_full; i++)
-                    trans_receiver->m_user_mflow.at(i) = (double)mflow[i];
             }
-
-            trans_receiver->m_is_user_Tin = as_boolean("is_rec_user_Tin");
-            if (trans_receiver->m_is_user_Tin)
-            {
-                size_t n_Tin = 0;
-                ssc_number_t* Tin = as_array("rec_user_Tin", &n_Tin);
-                if (n_Tin != n_steps_full)
-                    throw exec_error("tcsmolten_salt", "Invalid user-defined inlet temperature signal. Array must have " + util::to_string((int)n_steps_full) + " rows.");
-                trans_receiver->m_user_Tin.resize(n_steps_full);
-                for (size_t i = 0; i < n_steps_full; i++)
-                    trans_receiver->m_user_Tin.at(i) = (double)Tin[i];
-            }
-
 
             trans_receiver->m_is_user_mflow = as_boolean("is_rec_user_mflow");
             if (trans_receiver->m_is_user_mflow)
@@ -1969,6 +1945,8 @@ public:
                 for (size_t i = 0; i < n_steps_full; i++)
                     trans_receiver->m_user_Tin.at(i) = (double)Tin[i];
             }
+
+            trans_receiver->m_T_report_location = as_integer("T_report_location");
 
             receiver = std::move(trans_receiver);
         }

@@ -300,7 +300,7 @@ private:
 	void solve_transient_startup_model(parameter_eval_inputs &pinputs, transient_inputs &tinputs, int startup_mode, double target_temperature, double min_time, double max_time, transient_outputs &toutputs, double &startup_time, double &energy, double &parasitic);
 	void set_heattrace_power(bool is_maintain_T, double Ttarget, double time, parameter_eval_inputs &pinputs, transient_inputs &tinputs);
 
-    std::vector<double> get_temperature_at_panel_midpoints(const transient_inputs& tinputs, const transient_outputs& toutputs);
+    std::vector<double> get_temperature_per_panel(const transient_inputs& tinputs, const transient_outputs& toutputs);
 
 	enum startup_modes
 	{
@@ -396,6 +396,8 @@ public:
     bool m_is_user_Tin;
     std::vector<double> m_user_mflow;
     std::vector<double> m_user_Tin;
+
+    int m_T_report_location;
 
 	S_outputs outputs;
 

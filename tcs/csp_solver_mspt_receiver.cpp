@@ -182,6 +182,7 @@ C_mspt_receiver::C_mspt_receiver()
 
     m_is_user_mflow = false;
     m_is_user_Tin = false;
+    m_T_report_location = 0;
 }
 
 // Identical to C_mspt_receiver_222::init() except for last line (initialize_transient_parameters())
@@ -1536,7 +1537,7 @@ void C_mspt_receiver::call(const C_csp_weatherreader::S_outputs &weather,
 
         if (!rec_is_off)
         {
-            std::vector<double> Tmid = get_temperature_at_panel_midpoints(trans_inputs, trans_outputs);  // [K] Temperatures at panel midpoints at the end of the timestep
+            std::vector<double> Tmid = get_temperature_per_panel(trans_inputs, trans_outputs);  // [K] Temperatures at panel midpoints at the end of the timestep
             for (int j = 0; j < m_n_panels; j++)
                 outputs.m_T_panel_avg.at(j) = Tmid.at(j) - 273.15;
         }
@@ -4280,33 +4281,53 @@ double C_mspt_receiver::get_startup_energy()
 
 
 
-std::vector<double> C_mspt_receiver::get_temperature_at_panel_midpoints(const transient_inputs& tinputs, const transient_outputs& toutputs)
+std::vector<double> C_mspt_receiver::get_temperature_per_panel(const transient_inputs& tinputs, const transient_outputs& toutputs)
 {
-    std::vector<double> Tmdpt(m_n_panels, 0.0);
+
+    std::vector<double> Tpanel(m_n_panels, 0.0);
 
     for (size_t i = 0; i < m_n_lines; i++)
     {
+        int p = -1;
         for (size_t j = 0; j < m_n_elem; j++)			// Flow path elements in flow order
         {
             int id = m_flowelem_type.at(j, i);
+
             if (id >= 0)  // Receiver panel
             {
+                p += 1;   // Panel number if flow order
+
                 int s = tinputs.startpt.at(j);  // Index at first axial position of this flow element
                 int nz = tinputs.nz.at(j);      // Number of evaluation points
-                if (nz % 2 == 0)
+
+                if (m_T_report_location == 0) // Report temperature measurements at midpoint of each panel
                 {
-                    int p1 = nz / 2;
-                    int p2 = p1 - 1;
-                    Tmdpt.at(id) = 0.5 * (toutputs.t_profile(s + p1, i) + toutputs.t_profile(s + p2, i));
-                }
-                else
-                {
-                    int p = (nz + 1) / 2;
-                    Tmdpt.at(id) = toutputs.t_profile(s + p, i);
+                    if (nz % 2 == 0)
+                    {
+                        int p1 = nz / 2;
+                        int p2 = p1 - 1;
+                        Tpanel.at(id) = 0.5 * (toutputs.t_profile(s + p1, i) + toutputs.t_profile(s + p2, i));
+                    }
+                    else
+                    {
+                        int p = (nz + 1) / 2;
+                        Tpanel.at(id) = toutputs.t_profile(s + p, i);
+                    }
                 }
 
+                else if (m_T_report_location == 1)  // Report temperature measurements at one end of the receiver, starting at the inflow position
+                {
+                    int p1 = (p % 2 == 0) ? 0 : nz - 1; // Even number panels use flow element inlet, Odd-number panels use flow element outlet
+                    Tpanel.at(id) = toutputs.t_profile(s + p1, i);
+                }
+
+                else if (m_T_report_location == 2)  // Report temperature measurements at one end of the receiver, starting at the inflow position
+                {
+                    int p1 = (p % 2 == 0) ? nz-1 : 0; // Even number panels use flow element inlet, Odd-number panels use flow element outlet
+                    Tpanel.at(id) = toutputs.t_profile(s + p1, i);
+                }
             }
         }
     }
-    return Tmdpt;
+    return Tpanel;
 }
