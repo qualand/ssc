@@ -268,6 +268,7 @@ static C_csp_reported_outputs::S_output_info S_solver_output_info[] =
 	{C_csp_solver::C_solver_outputs::COL_W_DOT_TRACK, C_csp_reported_outputs::TS_WEIGHTED_AVE},	  //[MWe] Parasitic collector tracking, startup, stow power consumption
 	{C_csp_solver::C_solver_outputs::CR_W_DOT_PUMP, C_csp_reported_outputs::TS_WEIGHTED_AVE},		  //[MWe] Parasitic tower HTF pump power
 	{C_csp_solver::C_solver_outputs::SYS_W_DOT_PUMP, C_csp_reported_outputs::TS_WEIGHTED_AVE},		  //[MWe] Parasitic PC and TES HTF pump power
+    {C_csp_solver::C_solver_outputs::PC_W_DOT_OFF_HEAT, C_csp_reported_outputs::TS_WEIGHTED_AVE},     //[MWe] Parasitic electric heaters for cycle off
 	{C_csp_solver::C_solver_outputs::PC_W_DOT_COOLING, C_csp_reported_outputs::TS_WEIGHTED_AVE},	  //[MWe] Parasitic condenser operation power
 	{C_csp_solver::C_solver_outputs::SYS_W_DOT_FIXED, C_csp_reported_outputs::TS_WEIGHTED_AVE},	  //[MWe] Parasitic fixed power consumption
 	{C_csp_solver::C_solver_outputs::SYS_W_DOT_BOP, C_csp_reported_outputs::TS_WEIGHTED_AVE},		  //[MWe] Parasitic BOP power consumption
@@ -1502,6 +1503,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			is_rec_su_allowed = mc_tou.mc_dispatch_params.m_is_rec_su_allowed_in.at(p);
 			is_pc_su_allowed = mc_tou.mc_dispatch_params.m_is_pc_su_allowed_in.at(p);
 			is_pc_sb_allowed = mc_tou.mc_dispatch_params.m_is_pc_sb_allowed_in.at(p);
+            mc_pc_inputs.m_is_elec_heat_dur_off = mc_tou.mc_dispatch_params.m_is_elec_heat_dur_off.at(p);;
 
 			// Reset PC maximum mass flow rate --> Need something "close" to constrained max for convergence in defocus operating modes, but don't want mass flow guess to overconstrain thermal output
 			m_m_dot_pc_max = fmin(m_m_dot_pc_max, 1.2*(m_q_dot_pc_max / m_cycle_q_dot_des) * m_m_dot_pc_des);
@@ -4220,6 +4222,7 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 			mc_cr_out_solver.m_W_dot_htf_pump - 
 			(mc_pc_out_solver.m_W_dot_htf_pump + W_dot_tes_pump) -
 			mc_cr_out_solver.m_q_rec_heattrace -
+            mc_pc_out_solver.m_W_off_heat_par -
 			mc_pc_out_solver.m_W_cool_par -
 			mc_tes_outputs.m_q_heater - 
 			W_dot_fixed -
@@ -4378,7 +4381,8 @@ void C_csp_solver::Ssimulate(C_csp_solver::S_sim_setup & sim_setup)
 		mc_reported_outputs.value(C_solver_outputs::COL_W_DOT_TRACK, mc_cr_out_solver.m_W_dot_col_tracking);    //[MWe] Collector tracking, startup, stow power consumption 
 		mc_reported_outputs.value(C_solver_outputs::CR_W_DOT_PUMP, mc_cr_out_solver.m_W_dot_htf_pump);          //[MWe] Receiver/tower HTF pumping power   
 		mc_reported_outputs.value(C_solver_outputs::SYS_W_DOT_PUMP, (mc_pc_out_solver.m_W_dot_htf_pump + W_dot_tes_pump ));    //[MWe] TES & PC HTF pumping power (Receiver - PC side HTF)  
-		mc_reported_outputs.value(C_solver_outputs::PC_W_DOT_COOLING, mc_pc_out_solver.m_W_cool_par);           //[MWe] Power cycle cooling power consumption (fan, pumps, etc.)
+        mc_reported_outputs.value(C_solver_outputs::PC_W_DOT_OFF_HEAT, mc_pc_out_solver.m_W_off_heat_par);      //[MWe] Parasitic electric heaters for cycle off
+        mc_reported_outputs.value(C_solver_outputs::PC_W_DOT_COOLING, mc_pc_out_solver.m_W_cool_par);           //[MWe] Power cycle cooling power consumption (fan, pumps, etc.)
 		mc_reported_outputs.value(C_solver_outputs::SYS_W_DOT_FIXED, W_dot_fixed);								//[MWe] Fixed electric parasitic power load 
 		mc_reported_outputs.value(C_solver_outputs::SYS_W_DOT_BOP, W_dot_bop);									//[MWe] Balance-of-plant electric parasitic power load   
 		mc_reported_outputs.value(C_solver_outputs::W_DOT_NET, W_dot_net);								//[MWe] Total electric power output to grid        

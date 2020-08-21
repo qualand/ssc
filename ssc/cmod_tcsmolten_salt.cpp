@@ -264,6 +264,7 @@ static var_info _cm_vtab_tcsmolten_salt[] = {
     { SSC_INPUT,     SSC_NUMBER, "n_pl_inc",                           "Number of part-load increments for the heat rejection system",                                                                            "none",         "",                                  "Rankine Cycle",                            "pc_config=0",                                                      "INTEGER",       ""},
     { SSC_INPUT,     SSC_ARRAY,  "F_wc",                               "TOU array of fractions indicating wet cooling share for hybrid cooling",                                                                  "",             "",                                  "System Control",                           "pc_config=0",                                                      "",              ""},
     { SSC_INPUT,     SSC_NUMBER, "tech_type",                          "Turbine inlet pressure control 1=Fixed, 3=Sliding",                                                                                       "",             "",                                  "Rankine Cycle",                            "pc_config=0",                                                      "",              ""},
+    { SSC_INPUT,     SSC_NUMBER, "W_off_heat_frac",                    "Fraction of design power required to keep cycle warm when off",                                                                           "",             "",                                  "Rankine Cycle",                            "",                                                                 "",              ""},
 
     // User Defined cycle
     { SSC_INPUT,     SSC_NUMBER, "ud_f_W_dot_cool_des",                "Percent of user-defined power cycle design gross output consumed by cooling",                                                             "%",            "",                                  "User Defined Power Cycle",                 "pc_config=1",                                                      "",              ""},
@@ -391,6 +392,7 @@ static var_info _cm_vtab_tcsmolten_salt[] = {
     { SSC_INPUT,     SSC_ARRAY,  "is_rec_su_allowed_in",               "User-provided is receiver startup allowed?",                                                                                              "-",            "",                                  "System Control",                           "is_dispatch_targets=1",                                            "",              ""},
     { SSC_INPUT,     SSC_ARRAY,  "is_pc_su_allowed_in",                "User-provided is power cycle startup allowed?",                                                                                           "-",            "",                                  "System Control",                           "is_dispatch_targets=1",                                            "",              ""},
     { SSC_INPUT,     SSC_ARRAY,  "is_pc_sb_allowed_in",                "User-provided is power cycle standby allowed?",                                                                                           "-",            "",                                  "System Control",                           "is_dispatch_targets=1",                                            "",              ""},
+    { SSC_INPUT,     SSC_ARRAY,  "is_elec_heat_dur_off",               "User-provided does power cycle use electric heaters when off?",                                                                           "-",            "",                                  "System Control",                           "is_dispatch_targets=1",                                            "",              ""},
 																																																																																																		  
     { SSC_INPUT,     SSC_NUMBER, "is_dispatch_constr",                 "Use dispatch capacity/efficiency constraints?",                                                                                           "-",            "",                                  "System Control",                           "?=0",                                                              "",              ""},
     { SSC_INPUT,     SSC_ARRAY,  "disp_cap_constr",                    "Fraction of turbine capacity available",                                                                                                  "-",            "",                                  "System Control",                           "is_dispatch_constr=1",                                             "",              ""},
@@ -624,6 +626,7 @@ static var_info _cm_vtab_tcsmolten_salt[] = {
     { SSC_OUTPUT,    SSC_ARRAY,  "P_tower_pump",                       "Parasitic power receiver/tower HTF pump",                                                                                                 "MWe",          "",                                  "",                                         "*",                                                                "",              ""},
     { SSC_OUTPUT,    SSC_ARRAY,  "htf_pump_power",                     "Parasitic power TES and cycle HTF pump",                                                                                                  "MWe",          "",                                  "",                                         "*",                                                                "",              ""},
     { SSC_OUTPUT,    SSC_ARRAY,  "P_cooling_tower_tot",                "Parasitic power condenser operation",                                                                                                     "MWe",          "",                                  "",                                         "*",                                                                "",              ""},
+    { SSC_OUTPUT,    SSC_ARRAY,  "P_cycle_off_heat",                   "Parasitic power electric heaters for cycle off",                                                                                          "MWe",          "",                                  "PC",                                       "*",                                                                "",              ""},
     { SSC_OUTPUT,    SSC_ARRAY,  "P_fixed",                            "Parasitic power fixed load",                                                                                                              "MWe",          "",                                  "",                                         "*",                                                                "",              ""},
     { SSC_OUTPUT,    SSC_ARRAY,  "P_plant_balance_tot",                "Parasitic power generation-dependent load",                                                                                               "MWe",          "",                                  "",                                         "*",                                                                "",              ""},
     { SSC_OUTPUT,    SSC_ARRAY,  "P_rec_heattrace",                    "Receiver heat trace parasitic load",                                                                                                      "MWe",          "",                                  "System",                                   "*",                                                                "",              ""},
@@ -1068,6 +1071,14 @@ public:
             pc->m_htf_pump_coef = as_double("pb_pump_coef");
             pc->m_pc_fl = as_integer("rec_htf");                            // power cycle HTF is same as receiver HTF
             pc->m_pc_fl_props = as_matrix("field_fl_props");
+
+            // Check would remove if W_off_heat_frac propagates to UI
+            if (is_assigned("W_off_heat_frac")) {
+                pc->m_W_off_heat_frac = as_double("W_off_heat_frac");
+            }
+            else {
+                pc->m_W_off_heat_frac = 0.0;
+            }            
 
             // Check initialization variables
 			pc->m_operating_mode_initial = C_csp_power_cycle::OFF;
@@ -2388,7 +2399,10 @@ public:
             size_t n_pbsb = 0;
             ssc_number_t* is_pc_sb_allowed_in = as_array("is_pc_sb_allowed_in", &n_pbsb);
 
-            if (n_q_pc_target_su_in != n_expect || n != n_expect || n_max != n_expect || n_recsu != n_expect || n_pbsu != n_expect || n_pbsb != n_expect)
+            size_t n_pbeh;
+            ssc_number_t* is_elec_heat_dur_off = as_array("is_elec_heat_dur_off", &n_pbeh);
+
+            if (n_q_pc_target_su_in != n_expect || n != n_expect || n_max != n_expect || n_recsu != n_expect || n_pbsu != n_expect || n_pbsb != n_expect || n_pbeh != n_expect)
                 throw exec_error("tcsmolten_salt", "The number of points in the user-specified arrays of dispatch targets does not match the value expected from the simulation start time, end time, and time steps per hour");
             else
             {
@@ -2398,6 +2412,7 @@ public:
                 tou.mc_dispatch_params.m_is_rec_su_allowed_in.resize(n);
                 tou.mc_dispatch_params.m_is_pc_su_allowed_in.resize(n);
                 tou.mc_dispatch_params.m_is_pc_sb_allowed_in.resize(n);
+                tou.mc_dispatch_params.m_is_elec_heat_dur_off.resize(n);
 
                 for (int i = 0; i < n; i++)
                 {
@@ -2407,6 +2422,7 @@ public:
                     tou.mc_dispatch_params.m_is_rec_su_allowed_in.at(i) = (bool)is_rec_su_allowed_in[i];
                     tou.mc_dispatch_params.m_is_pc_su_allowed_in.at(i) = (bool)is_pc_su_allowed_in[i];
                     tou.mc_dispatch_params.m_is_pc_sb_allowed_in.at(i) = (bool)is_pc_sb_allowed_in[i];
+                    tou.mc_dispatch_params.m_is_elec_heat_dur_off.at(i) = (bool)is_elec_heat_dur_off[i];
                 }
 
             }
@@ -2574,6 +2590,7 @@ public:
         csp_solver.mc_reported_outputs.assign(C_csp_solver::C_solver_outputs::COL_W_DOT_TRACK, allocate("pparasi", n_steps_fixed), n_steps_fixed);
         csp_solver.mc_reported_outputs.assign(C_csp_solver::C_solver_outputs::CR_W_DOT_PUMP, allocate("P_tower_pump", n_steps_fixed), n_steps_fixed);
         csp_solver.mc_reported_outputs.assign(C_csp_solver::C_solver_outputs::SYS_W_DOT_PUMP, allocate("htf_pump_power", n_steps_fixed), n_steps_fixed);
+        csp_solver.mc_reported_outputs.assign(C_csp_solver::C_solver_outputs::PC_W_DOT_OFF_HEAT, allocate("P_cycle_off_heat", n_steps_fixed), n_steps_fixed);
         csp_solver.mc_reported_outputs.assign(C_csp_solver::C_solver_outputs::PC_W_DOT_COOLING, allocate("P_cooling_tower_tot", n_steps_fixed), n_steps_fixed);
         csp_solver.mc_reported_outputs.assign(C_csp_solver::C_solver_outputs::SYS_W_DOT_FIXED, allocate("P_fixed", n_steps_fixed), n_steps_fixed);
         csp_solver.mc_reported_outputs.assign(C_csp_solver::C_solver_outputs::SYS_W_DOT_BOP, allocate("P_plant_balance_tot", n_steps_fixed), n_steps_fixed);
