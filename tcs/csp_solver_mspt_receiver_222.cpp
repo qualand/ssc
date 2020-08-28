@@ -105,6 +105,7 @@ C_mspt_receiver_222::C_mspt_receiver_222()
 
     m_is_user_mflow = false;
     m_is_user_Tin = false;
+    m_is_user_Tout = false;
 
 }
 
@@ -443,7 +444,6 @@ void C_mspt_receiver_222::call(const C_csp_weatherreader::S_outputs &weather,
     }
 
 
-	
 	// Initialize steady state solutions with current weather, DNI, field efficiency, and inlet conditions
 	s_steady_state_soln soln, soln_actual, soln_clearsky;
 	soln.hour = time / 3600.0;
@@ -470,7 +470,7 @@ void C_mspt_receiver_222::call(const C_csp_weatherreader::S_outputs &weather,
     {
         soln.m_dot_salt = mflow / m_n_lines;
         soln.q_dot_inc = calculate_flux_profiles(I_bn, field_eff, soln.od_control, flux_map_input);  // Absorbed flux profiles at actual DNI and clear-sky defocus
-        calculate_steady_state_soln(soln, 0.00025);  // Solve energy balances at clearsky mass flow rate and actual DNI conditions
+        calculate_steady_state_soln(soln, 0.00025);  // Solve energy balances at user mass flow rate and actual DNI conditions
     }
 	else
 	{
@@ -805,9 +805,28 @@ void C_mspt_receiver_222::call(const C_csp_weatherreader::S_outputs &weather,
     for (int j = 0; j < m_n_panels; j++)
         outputs.m_T_panel_avg.at(j) = m_T_panel_ave.at(j) - 273.15;
 
+    // Force receiver outlet temperature to user-defined value (and adjust corresponding thermal power). Only for comparing cycle/TES models with plant data
+    if (m_is_user_Tout && m_is_user_mflow && !rec_is_off)
+    {
+        size_t nsteps = m_user_Tout.size();
+        int stepsize = 8760 * 3600 / nsteps;   // File time step size [s]
+        int step = (int)(time / stepsize) - 1;
+        double ud_T_salt_out = m_user_Tout.at(step);
+
+        double dT = (outputs.m_T_salt_hot - outputs.m_T_salt_cold);
+        double dTnew = (ud_T_salt_out - outputs.m_T_salt_cold);
+
+        outputs.m_T_salt_hot = ud_T_salt_out;
+        outputs.m_T_salt_hot_rec = ud_T_salt_out;
+        outputs.m_Q_thermal *= dTnew / dT;
+    }
+
     ms_outputs = outputs;
 
 	m_eta_field_iter_prev = field_eff;	//[-]
+
+
+
 }
 
 void C_mspt_receiver_222::off(const C_csp_weatherreader::S_outputs &weather,

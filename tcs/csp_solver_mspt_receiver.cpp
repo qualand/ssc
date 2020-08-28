@@ -182,6 +182,7 @@ C_mspt_receiver::C_mspt_receiver()
 
     m_is_user_mflow = false;
     m_is_user_Tin = false;
+    m_is_user_Tout = false;
     m_T_report_location = 0;
 }
 
@@ -754,6 +755,7 @@ void C_mspt_receiver::call(const C_csp_weatherreader::S_outputs &weather,
         T_salt_cold_in = m_user_Tin.at(step) + 273.15;
     }
 
+
     // Initialize steady state solutions with current weather, DNI, field efficiency, and inlet conditions
 	s_steady_state_soln soln, soln_actual, soln_clearsky;
 	soln.hour = time / 3600.0;
@@ -780,7 +782,7 @@ void C_mspt_receiver::call(const C_csp_weatherreader::S_outputs &weather,
     {
         soln.m_dot_salt = mflow / m_n_lines;
         soln.q_dot_inc = calculate_flux_profiles(I_bn, field_eff, soln.od_control, flux_map_input);  // Absorbed flux profiles at actual DNI and clear-sky defocus
-        calculate_steady_state_soln(soln, 0.00025);  // Solve energy balances at clearsky mass flow rate and actual DNI conditions
+        calculate_steady_state_soln(soln, 0.00025);  // Solve energy balances at user mass flow rate and actual DNI conditions
     }
 	else
 	{
@@ -1547,9 +1549,26 @@ void C_mspt_receiver::call(const C_csp_weatherreader::S_outputs &weather,
 	outputs.m_Q_thermal_csky_ss = q_thermal_csky / 1.e6; //[MWt]
 	outputs.m_Q_thermal_ss = q_thermal_steadystate / 1.e6; //[MWt]
 
+    // Force receiver outlet temperature to user-defined value (and adjust corresponding thermal power). Only for comparing cycle/TES models with plant data
+    if (m_is_user_Tout && m_is_user_mflow && !rec_is_off)
+    {
+        size_t nsteps = m_user_Tout.size();
+        int stepsize = 8760 * 3600 / nsteps;   // File time step size [s]
+        int step = (int)(time / stepsize) - 1;
+        double ud_T_salt_out = m_user_Tout.at(step);
+
+        double dT = (outputs.m_T_salt_hot - outputs.m_T_salt_cold);
+        double dTnew = (ud_T_salt_out - outputs.m_T_salt_cold);
+
+        outputs.m_T_salt_hot = ud_T_salt_out;
+        outputs.m_T_salt_hot_rec = ud_T_salt_out;
+        outputs.m_Q_thermal *= dTnew / dT;
+    }
+
     ms_outputs = outputs;
 
 	m_eta_field_iter_prev = field_eff;	//[-]
+
 }
 
 
