@@ -168,10 +168,14 @@ static var_info _cm_vtab_tcsmolten_salt[] = {
 	{ SSC_INPUT,     SSC_ARRAY,  "rec_clearsky_dni",					"User-defined clear-sky DNI",																											  "W/m2",         "",                                  "Tower and Receiver",                       "rec_clearsky_model=0",											   "",              ""},
 	{ SSC_INPUT,     SSC_NUMBER, "rec_clearsky_fraction",               "Weighting fraction on clear-sky DNI for receiver flow control",                                                                          "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              ""},
 
-    { SSC_INPUT,     SSC_NUMBER, "is_rec_user_mflow",                   "Use user-defined receiver mass flow control array?",                                                                                     "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
-    { SSC_INPUT,     SSC_NUMBER, "is_rec_user_Tin",                     "Use user-defined receiver inlet temperature array?",                                                                                     "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
-    { SSC_INPUT,     SSC_ARRAY,  "rec_user_mflow",                      "User-defined receiver mass flow control array?",                                                                                         "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
-    { SSC_INPUT,     SSC_ARRAY,  "rec_user_Tin",                        "User-defined receiver inlet temperature array?",                                                                                         "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
+    { SSC_INPUT,     SSC_NUMBER, "is_rec_user_mflow",                   "Use user-defined receiver mass flow control array",                                                                                      "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
+    { SSC_INPUT,     SSC_NUMBER, "is_rec_user_Tin",                     "Use user-defined receiver inlet temperature array",                                                                                      "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
+    { SSC_INPUT,     SSC_ARRAY,  "rec_user_mflow",                      "User-defined receiver mass flow control array",                                                                                          "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
+    { SSC_INPUT,     SSC_ARRAY,  "rec_user_Tin",                        "User-defined receiver inlet temperature array",                                                                                          "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
+
+    { SSC_INPUT,     SSC_NUMBER, "is_rec_user_Tout",                    "Use user-defined receiver outlet temperature",                                                                                           "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
+    { SSC_INPUT,     SSC_ARRAY,  "rec_user_Tout",                       "User-defined receiver outlet temperature array",                                                                                         "",             "",                                  "Tower and Receiver",                       "?=0.0",                                                            "",              "" },
+
 
     // Transient receiver parameters
 	{ SSC_INPUT,     SSC_NUMBER, "is_rec_model_trans",                 "Formulate receiver model as transient?",                                                                                                  "",             "",                                  "Tower and Receiver",                       "?=0",                                                              "",              ""},
@@ -1835,6 +1839,20 @@ public:
                     ss_receiver->m_user_Tin.at(i) = (double)Tin[i];
             }
 
+            ss_receiver->m_is_user_Tout = as_boolean("is_rec_user_Tout");
+            if (ss_receiver->m_is_user_Tout)
+            {
+                size_t n_Tout = 0;
+                ssc_number_t* Tout = as_array("rec_user_Tout", &n_Tout);
+                if (n_Tout != n_steps_full)
+                    throw exec_error("tcsmolten_salt", "Invalid user-defined outlet temperature signal. Array must have " + util::to_string((int)n_steps_full) + " rows.");
+                ss_receiver->m_user_Tout.resize(n_steps_full);
+                for (size_t i = 0; i < n_steps_full; i++)
+                    ss_receiver->m_user_Tout.at(i) = (double)Tout[i];
+            }
+
+
+
             receiver = std::move(ss_receiver);
         }
         else {
@@ -1955,6 +1973,18 @@ public:
                 trans_receiver->m_user_Tin.resize(n_steps_full);
                 for (size_t i = 0; i < n_steps_full; i++)
                     trans_receiver->m_user_Tin.at(i) = (double)Tin[i];
+            }
+
+            trans_receiver->m_is_user_Tout = as_boolean("is_rec_user_Tout");
+            if (trans_receiver->m_is_user_Tout)
+            {
+                size_t n_Tout = 0;
+                ssc_number_t* Tout = as_array("rec_user_Tout", &n_Tout);
+                if (n_Tout != n_steps_full)
+                    throw exec_error("tcsmolten_salt", "Invalid user-defined outlet temperature signal. Array must have " + util::to_string((int)n_steps_full) + " rows.");
+                trans_receiver->m_user_Tout.resize(n_steps_full);
+                for (size_t i = 0; i < n_steps_full; i++)
+                    trans_receiver->m_user_Tout.at(i) = (double)Tout[i];
             }
 
             trans_receiver->m_T_report_location = as_integer("T_report_location");
